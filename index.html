@@ -128,11 +128,6 @@
     padding:calc(14px + env(safe-area-inset-top)) 16px calc(104px + env(safe-area-inset-bottom));
     text-align:center;
   }
-  .site-tag{
-    margin:2px 0 0;font-weight:800;letter-spacing:.55em;text-indent:.55em;
-    font-size:.82rem;color:var(--lime);
-    text-shadow:0 0 14px rgba(206,255,28,.55);
-  }
   .center{
     position:relative;
     flex:1;min-height:0;width:100%;
@@ -604,6 +599,25 @@
   }
   .card-crown.on{opacity:1}
   .card-crown svg{width:20px;height:20px;fill:var(--lime);filter:drop-shadow(0 0 6px rgba(206,255,28,.65))}
+  /* ---------- crown overlay: the show crown's OWN top layer ----------
+     The reference site's logo is not a page element: its engine
+     re-renders it every rAF from a top-level overlay, so no stage
+     or theatre layer transition can ever cover or hide it. Ours
+     now works the same way: the show crown (pixel «vov.cat» + the
+     roam paw) is RE-PARENTED into this fixed, highest layer at
+     init, and a rAF keeper driven by the show's own clock re-seats
+     it above the card and re-asserts its visibility every frame.
+     Its visibility is decided ONLY by its own state machine
+     (off → shown → seated → handover), never by any stage layer's
+     opacity, z-index or visibility. No transform/filter/will-change
+     here, so the fixed-position paw inside keeps viewport geometry. */
+  .crown-layer{
+    position:fixed;inset:0;z-index:240;pointer-events:none;
+    opacity:0;visibility:hidden;
+    transition:opacity .6s cubic-bezier(.2,.8,.2,1), visibility 0s linear .6s;
+  }
+  .crown-layer.on{opacity:1;visibility:visible;transition:opacity .3s cubic-bezier(.2,.8,.2,1)}
+  .crown-layer .trans-pos{z-index:212}
   @keyframes pixelFlicker{0%{opacity:.1}25%{opacity:.9}45%{opacity:.3}70%{opacity:1}85%{opacity:.55}100%{opacity:1}}
   .trans-pixel.locked{text-shadow:3px 3px 0 rgba(29,51,0,.9), 0 0 34px rgba(206,255,28,.75)}
   .trans-pixel.out{opacity:0;transform:translateY(-8px) scale(.94)}
@@ -667,8 +681,7 @@
   }
   /* staged reveal: the intro card forms first over black; the ASCII
      background, menu row and music player fade in only at the very end */
-  .stage .site-tag,.stage .meow-row,.stage .menu,.foot{transition:opacity .7s cubic-bezier(.2,.8,.2,1)}
-  body:not(.entered) .stage .site-tag,
+  .stage .meow-row,.stage .menu,.foot{transition:opacity .7s cubic-bezier(.2,.8,.2,1)}
   body:not(.entered) .stage .typewriter,
   body:not(.entered) .stage .hint,
   body:not(.entered) .stage .meow-row,
@@ -850,6 +863,22 @@
     transition:transform .45s cubic-bezier(.2,.8,.2,1), opacity .45s cubic-bezier(.2,.8,.2,1);
   }
   .trans-meow.out{transform:scale(.6) translateY(10px);opacity:0}
+  /* THE STAMP: one big paw print slamming down at centre stage —
+     the single-beat replacement for the old «Mèu ×4» sequence */
+  .stamp-paw{
+    width:clamp(100px,17vw,136px);height:clamp(100px,17vw,136px);
+    color:var(--lime);opacity:0;pointer-events:none;
+    filter:drop-shadow(0 0 22px rgba(206,255,28,.75));
+  }
+  .stamp-paw svg{display:block;width:100%;height:100%}
+  .stamp-paw.go{animation:stampIn .5s cubic-bezier(.2,.8,.2,1) forwards}
+  @keyframes stampIn{
+    0%{opacity:0;transform:scale(2.3) rotate(-16deg)}
+    55%{opacity:1;transform:scale(.93) rotate(2deg)}
+    75%{transform:scale(1.05) rotate(-1deg)}
+    100%{opacity:1;transform:scale(1) rotate(0deg)}
+  }
+  .stamp-paw.out{transition:opacity .3s cubic-bezier(.2,.8,.2,1), transform .3s cubic-bezier(.2,.8,.2,1);opacity:0;transform:scale(.88) rotate(-4deg)}
   .meow-w{position:relative;display:inline-block;opacity:0;transform:translateY(14px) scale(.5)}
   .meow-w.in{animation:wordIn .38s cubic-bezier(.2,.8,.2,1) forwards}
   .meow-paw{
@@ -1327,6 +1356,9 @@
     <div class="trans-pos">
       <p class="trans-meow" id="transMeow" hidden><span class="meow-w"><i class="meow-paw"></i>Mèu</span><span class="meow-w"><i class="meow-paw"></i>Mèu</span><span class="meow-w"><i class="meow-paw"></i>Mèu</span><span class="meow-w"><i class="meow-paw"></i>Mèu</span></p>
     </div>
+    <div class="trans-pos">
+      <div class="stamp-paw" id="stampPaw" hidden aria-hidden="true"></div>
+    </div>
     <div class="trans-pos" id="pixelPos">
       <div class="trans-pixel" id="transPixel" hidden>vov.cat</div>
     </div>
@@ -1344,16 +1376,10 @@
   <div class="gray-flash" id="grayFlash"></div>
   <canvas id="burstCanvas" aria-hidden="true"></canvas>
   <div class="white-flash" id="whiteFlash"></div>
-  <!-- fake mouse cursor + live-typed code window for the card theatre -->
-  <div class="code-win" id="codeWin" hidden aria-hidden="true">
-    <div class="code-head">
-      <span class="code-dot" style="background:#ff5f57"></span>
-      <span class="code-dot" style="background:#febc2e"></span>
-      <span class="code-dot" style="background:#28c840"></span>
-      <span class="code-title">casa.js — vov.cat</span>
-    </div>
-    <pre class="code-body" id="codeBody"></pre>
-  </div>
+  <!-- fake mouse cursor for the card theatre (the casa.js code
+       window was cut with the per-piece landings — owner's
+       short-cut: the card now reveals all at once, and the
+       window only ever accompanied the piece-by-piece build) -->
   <div class="fake-cursor" id="fakeCursor" hidden aria-hidden="true">
     <span class="cur-glyph" id="curGlyph"><svg viewBox="0 0 24 24"><path d="M4.5 2.8 19.8 11.6 12.6 13.4 15.9 20.6 13.2 22 9.9 14.8 5.2 19.4Z" fill="#ffffff" stroke="#111" stroke-width="1.4" stroke-linejoin="round"/></svg></span>
     <span class="cursor-read" id="cursorRead">x 0000 · y 0000</span>
@@ -1372,6 +1398,16 @@
   </div>
   <button class="skip-btn" id="skipBtn" type="button" hidden>跳过开场 »</button>
 </div>
+
+<!-- crown overlay: the show crown lives HERE, in the page's highest
+     layer — not inside the gate/stage/theatre layers. At init the
+     choreography moves the pixel name's seat (#pixelPos) and the
+     roam paw (#transWalk) into this layer, and its own rAF keeper
+     renders the crown every frame until the finale handover, when
+     the card's own crown takes over at the same seat. The only
+     «vov.cat» name at the top of the settled page is the card's
+     crown above the card — there is no separate top-of-page tag. -->
+<div class="crown-layer" id="crownLayer" hidden aria-hidden="true"></div>
 
 <!-- uwu-style ASCII video background (decorative layer) -->
 <div class="bg-stage" aria-hidden="true">
@@ -2314,14 +2350,14 @@
     }, 2400);
   }
 
-  // --- entry choreography: ONE click plays the whole 40s show ---
+  // --- entry choreography: ONE click plays the whole ~22s show ---
   // Exactly like the reference: the visitor clicks the paw once and
   // then does nothing — every stage below is driven purely by the
   // setTimeout timeline in enter(), never by animation-end events,
   // hover, scroll or any further input, so the show always reaches
   // its end state on schedule even if frames drop. The only other
   // interaction is the explicit «跳过开场 »» button (from 1.2s in).
-  // Written as a PER-SECOND script: every second of the 40 carries
+  // Written as a PER-SECOND script: every second of the 30 carries
   // moving picture + an event (a landing, a decode, a lock, a
   // displacement) + a sound (a real cat, the keyboard layer, a bed
   // accent, an action timbre), all three locked to the same beat.
@@ -2403,11 +2439,112 @@
     meowPaws[mpi].innerHTML = PAW;
     meowPaws[mpi].style.color = pawColors[mpi % pawColors.length];
   }
+  // the stamp paw (single-beat centre-stage print) gets the same paw
+  var stampInit = document.getElementById('stampPaw');
+  if (stampInit) stampInit.innerHTML = PAW;
   // the walking paw carries its own pulse ring (lime), a second
   // ORANGE pulse ring for the mid-journey bloom, and the blue
   // design-tool "image element" badge riding on its corner
   var walkInit = document.getElementById('transWalk');
   if (walkInit) walkInit.innerHTML = '<span class="pulse"></span><span class="pulse orange"></span>' + PAW + '<span class="walk-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8.6" cy="8.6" r="2.1" fill="#fff"/><path d="M3.5 19.5 9.8 11.4a1.5 1.5 0 0 1 2.3 0l2.2 2.8 2-2.4a1.5 1.5 0 0 1 2.3 0l1.9 2.4v3.3a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-2z" fill="#fff"/></svg></span>';
+
+  // --- the crown overlay + its rAF keeper (reference architecture) ---
+  // ROOT CAUSE of the vanishing crown, found by live sampling:
+  // the show crown used to be an ordinary DOM node inside
+  // #transStage (.trans, z-index 3) INSIDE #gate — the very layer
+  // the show itself fades and re-composites to reveal the stage —
+  // and its seat was a one-time static measurement taken at click
+  // time, with nothing ever re-asserting its visibility or its
+  // position. Once the card-theatre phase began, the crown was
+  // simply never rendered again (verified frame by frame: card
+  // assembling, © line typing, crown seat empty); only the
+  // STAGE-side .card-crown existed, so a crown "appeared" again
+  // at the finale. The reference's logo cannot die that way: its
+  // engine re-renders it every rAF from a top-level overlay whose
+  // state the logo itself owns. So: the pixel name's seat and the
+  // roam paw are re-parented OUT of the theatre layer into
+  // #crownLayer (fixed, z-index 240 — above the gate, the working
+  // cursor and the draw frame), and the keeper below — driven by
+  // the same rAF clock as the cursor — re-seats the lockup from
+  // the card's CURRENT rect and re-asserts its visibility on
+  // every frame. The crown's visibility is decided only by this
+  // state machine: off → shown (13.85s) → seated (roam lock) →
+  // handover (finale, the card's own crown takes the same seat).
+  var crownLayer = document.getElementById('crownLayer');
+  var crownPosEl = document.getElementById('pixelPos');
+  var crownState = 'off';
+  var crownRaf = 0;
+  if (crownLayer){
+    if (crownPosEl) crownLayer.appendChild(crownPosEl);
+    if (walkInit) crownLayer.appendChild(walkInit);
+  }
+  function crownSeatNow(){
+    var px = document.getElementById('transPixel');
+    var card = document.getElementById('titleOpen');
+    if (!px || !crownPosEl || !card || px.hidden) return;
+    var cr = card.getBoundingClientRect();
+    var ph = px.getBoundingClientRect().height;
+    if (!ph) return;
+    crownPosEl.style.top = Math.max(24, cr.top - ph / 2 - 12) + 'px';
+  }
+  function crownKeeper(){
+    crownRaf = 0;
+    if (crownState !== 'shown' && crownState !== 'seated') return;
+    crownSeatNow();
+    if (crownState === 'seated'){
+      // the paw stays glued to the name's left flank, re-rendered
+      // every frame from live rects — it cannot be left behind by
+      // a late font swap or a settling card, and nothing in the
+      // theatre layer can take it down
+      var px = document.getElementById('transPixel');
+      var wp = document.getElementById('transWalk');
+      if (px && wp && !px.hidden){
+        var pr = px.getBoundingClientRect();
+        var sz = parseFloat(wp.style.width) || 48;
+        wp.style.opacity = '1';
+        wp.style.transform = 'translate(' + (pr.left - 27 - sz / 2) + 'px,' + (pr.top + pr.height / 2 - sz / 2) + 'px) rotate(0deg)';
+      }
+    }
+    crownRaf = requestAnimationFrame(crownKeeper);
+  }
+  function crownShow(){
+    crownState = 'shown';
+    if (crownLayer){
+      crownLayer.hidden = false;
+      requestAnimationFrame(function(){ crownLayer.classList.add('on'); });
+    }
+    crownSeatNow();
+    if (!crownRaf) crownRaf = requestAnimationFrame(crownKeeper);
+  }
+  function crownSeated(){
+    crownState = 'seated';
+    // the roam's last WAAPI flight is over; release its fill so
+    // the keeper's per-frame transform is the paw's only driver
+    var wp = document.getElementById('transWalk');
+    if (wp){
+      try {
+        var ans = wp.getAnimations();
+        for (var ai = 0; ai < ans.length; ai++) ans[ai].cancel();
+      } catch(e){}
+    }
+    if (!crownRaf) crownRaf = requestAnimationFrame(crownKeeper);
+  }
+  function crownHandover(){
+    if (crownState === 'off' || crownState === 'handover') return;
+    crownState = 'handover';
+    if (crownRaf){ cancelAnimationFrame(crownRaf); crownRaf = 0; }
+    if (crownLayer) crownLayer.classList.remove('on');
+    setTimeout(function(){
+      if (crownState !== 'handover') return;
+      crownState = 'off';
+      if (crownLayer) crownLayer.hidden = true;
+    }, 700);
+  }
+  function crownKill(){
+    crownState = 'off';
+    if (crownRaf){ cancelAnimationFrame(crownRaf); crownRaf = 0; }
+    if (crownLayer){ crownLayer.classList.remove('on'); crownLayer.hidden = true; }
+  }
 
   var entered = false;
   var transitioning = false;
@@ -2418,13 +2555,13 @@
   function later(fn, ms){ timers.push(setTimeout(fn, ms)); }
   function clearTimers(){ for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]); timers = []; }
   // Human typing rhythm — the reference's ONLY text effect:
-  // 12–40ms per character, +0–30ms after a space, +100ms at a
+  // 10–34ms per character, +0–30ms after a space, +100ms at a
   // newline, and a 2.5% chance of an 80–200ms stall on any char.
   // Every typer in the show (© line, casa.js, the edit
   // performance, the status lines) shares this one rhythm.
   function humanDelay(ch, nl){
     if (nl) return 100 + Math.random() * 30;
-    var d = 12 + Math.random() * 28;
+    var d = 10 + Math.random() * 24;
     if (ch === ' ') d += Math.random() * 30;
     if (Math.random() < 0.025) d += 80 + Math.random() * 120;
     return d;
@@ -2471,22 +2608,22 @@
     if (selBox){ selBox.hidden = true; selBox.classList.remove('flash'); }
   }
 
-  // --- build status bar (40-second, single-cursor edition) ---
+  // --- build status bar (30-second, single-cursor edition) ---
   // Bottom-left mono status bar, alive through both acts: first
-  // «Escanejant la pàgina…», then a live count «capa X / Y» (Y = 12
-  // in Act 1, 20 in Act 2) with a thin progress bar and «♪ So
+  // «Escanejant la pàgina…», then a live count «capa X / Y» (Y = 10
+  // in Act 1, 18 in Act 2) with a thin progress bar and «♪ So
   // activat» on its right. A capa ticks exactly when a layer of
   // the show lands. There are no agent counts any more — ONE
   // cursor does all the work. Each act closes with a typed line
   // («…reconstruït en X.Xs») and a blinking ▶.
-  var bsTotal = 12;
+  var bsTotal = 10;
   var bsDone = false;
   var bsEl = document.getElementById('buildStatus');
   var bsText = document.getElementById('bsText');
   var bsFill = document.getElementById('bsFill');
   var bsTypeInt = 0;
   function statusShow(){
-    bsTotal = 12; bsDone = false;
+    bsTotal = 10; bsDone = false;
     if (!bsEl) return;
     bsEl.hidden = false;
     bsEl.classList.remove('bye');
@@ -2528,7 +2665,7 @@
     }, 28);
   }
   function statusResetAct2(){
-    bsTotal = 27; bsDone = false;
+    bsTotal = 18; bsDone = false;
     if (bsTypeInt){ clearInterval(bsTypeInt); bsTypeInt = 0; }
     if (!bsEl) return;
     bsEl.hidden = false;
@@ -2596,23 +2733,23 @@
       setTimeout(function(){
         px.classList.remove('shining');
         px.classList.remove('pulsing');
-      }, 1150);
-    }, letters.length * 55 + 200);
+      }, 900);
+    }, letters.length * 55 + 130);
     later(function(){
       var r = px.getBoundingClientRect();
       var cc = curEl();
       if (!cc || cc.hidden) cursorShowAt(r.right + 34, r.top - 22);
-      cursorTo(r.right + 8, r.top + r.height / 2 - 6, 380);
+      cursorTo(r.right + 8, r.top + r.height / 2 - 6, 300);
       later(function(){
         px.style.transform = 'translateX(3px)';
         if (window.pawDrag) window.pawDrag(true);
-        later(function(){ px.style.transform = ''; }, 280);
+        later(function(){ px.style.transform = ''; }, 220);
         later(function(){
           cursorClickFx();
           ringBurst(r.right + 14, r.top + r.height / 2, 34, 'rgba(206,255,28,.9)');
-        }, 300);
-      }, 430);
-    }, letters.length * 55 + 560);
+        }, 240);
+      }, 340);
+    }, letters.length * 55 + 380);
   }
 
   // --- Act 2: the paw's roam home to the crown lockup ---
@@ -2667,7 +2804,7 @@
         y: u * u * sy + 2 * u * t * cyp + t * t * ey
       };
     }
-    var STEPS = 5, STEP_MS = 400;
+    var STEPS = 5, STEP_MS = 320;
     var px = sx, py = sy;
     for (var i = 1; i <= STEPS; i++){
       (function(k){
@@ -2712,6 +2849,10 @@
               walkPaw.style.filter = 'drop-shadow(0 0 22px rgba(206,255,28,.95)) brightness(1.25)';
               walkPaw.style.scale = '';
               lockSparkles(nx, ny);
+              // the lockup is SEATED: from here the crown
+              // keeper owns the paw + name, every frame,
+              // until the finale handover
+              crownSeated();
               cursorKind('arrow');
               cursorClickFx();
               cursorTo(nx - 120, ny - 110, 500);
@@ -2821,7 +2962,7 @@
   function stopScramble(){
     if (scrambleInt){ clearInterval(scrambleInt); scrambleInt = 0; }
   }
-  // Stage A (compressed to 2.2s for the 40-second cut): the locked
+  // Stage A (compressed to 2.2s for the 30-second cut): the locked
   // slogan dissolves into a character shuffle, resolves into the
   // deliberately wrong word-by-word machine translation
   // «这里说了算这只猫», holds it still for a full 1.2s so the joke
@@ -2861,18 +3002,18 @@
           word.style.background = 'rgba(13,153,255,.28)';
           word.style.borderRadius = '6px';
           if (window.sndSnap) window.sndSnap();
-        }, startAt + 330);
-        later(function(){ cursorPress(); }, startAt + 460);
+        }, startAt + 260);
+        later(function(){ cursorPress(); }, startAt + 370);
         later(function(){
           word.textContent = '';
           var caret = document.createElement('span');
           caret.className = 'hcaret';
           word.appendChild(caret);
           cursorKind('ibeam');
-        }, startAt + 600);
-        var acc = startAt + 660;
+        }, startAt + 470);
+        var acc = startAt + 520;
         for (var ci = 0; ci < cn.length; ci++){
-          acc += 118 + humanDelay(cn[ci], false);
+          acc += 84 + humanDelay(cn[ci], false);
           (function(ch, at){
             later(function(){
               var caret = word.querySelector('.hcaret');
@@ -2888,9 +3029,9 @@
           word.style.background = '';
           cursorKind('arrow');
           if (window.sndPlaceEl) window.sndPlaceEl(word);
-        }, acc + 200);
+        }, acc + 140);
       })(words[k], k, t);
-      t += 900 + CNW[k].length * 100;
+      t += 640 + CNW[k].length * 72;
     }
     later(function(){ followSel(slogan, 300); }, t + 40);
   }
@@ -2923,6 +3064,40 @@
     }
   }
 
+  // The SHORT-cut card reveal (owner's cut): the cursor draws the
+  // frame, and the moment it completes, ALL the card's content
+  // lights up AT ONCE as one body — a brief gray placeholder
+  // flash on every piece, the whole card sliding in ~0.34s with
+  // a settle overshoot, one place() chord sung from the card's
+  // own area, and one confirming press from the cursor at its
+  // centre. No per-piece landings, no © typing, no code window.
+  function groupReveal(){
+    var card = document.getElementById('titleOpen');
+    var pieces = document.querySelectorAll('[data-asm]');
+    for (var i = 0; i < pieces.length; i++){
+      pieces[i].classList.add('ph');
+      pieces[i].classList.add('landed');
+    }
+    setTimeout(function(){
+      var ps = document.querySelectorAll('[data-asm]');
+      for (var j = 0; j < ps.length; j++) ps[j].classList.remove('ph');
+    }, 240);
+    if (!card) return;
+    try {
+      card.animate([
+        { transform:'translateY(14px) scale(.965)', opacity:.3 },
+        { transform:'translateY(-3px) scale(1.008)', opacity:1, offset:.62 },
+        { transform:'translateY(0) scale(1)', opacity:1 }
+      ], { duration:340, easing:'cubic-bezier(.2,.8,.2,1)' });
+    } catch(e){}
+    if (window.sndPlaceEl) window.sndPlaceEl(card);
+    var r = card.getBoundingClientRect();
+    var cc = curEl();
+    if (!cc || cc.hidden) cursorShowAt(r.left - 50, r.top - 40);
+    cursorTo(r.left + r.width / 2 - 6, r.top + r.height / 2 - 6, 360);
+    later(function(){ cursorPress(); }, 390);
+  }
+
   // --- 30-second edition: extra stage helpers ---
   var meowEl = document.getElementById('transMeow');
   var walkPaw = document.getElementById('transWalk');
@@ -2935,10 +3110,10 @@
   // per original word; a little paw pops above each and a REAL cat
   // answers — meow-1, meow-2, meow-3, meow-4 in turn, two cats
   // alternating, never the old synthesised note. The calls are
-  // SPACED 1050ms apart (the owner: "the four meows are too close
-  // together") — each recording is ~1s, so every cat's tail fully
-  // decays before the next one answers; the whole interlude runs
-  // ~4.5s and the fourth gets a full breath before the title.
+  // SPACED 850ms apart — tightened for the 30-second cut at the
+  // owner's new direction, but still four clearly separate cats,
+  // never a blur; the whole interlude runs ~3.4s and the fourth
+  // gets a breath before the title.
   function startMeows(){
     if (!meowEl) return;
     if (scrambleEl) scrambleEl.hidden = true;
@@ -2958,16 +3133,45 @@
         later(function(){
           var r = w.getBoundingClientRect();
           cursorTo(r.left + r.width / 2 - 6, r.top - 18, 430);
-        }, Math.max(0, k * 1050 - 300));
+        }, Math.max(0, k * 850 - 240));
         later(function(){
           w.classList.add('in');
           var p = w.querySelector('.meow-paw');
           if (p) p.classList.add('pop');
           cursorClickFx();
           if (window.pawRealMeow) window.pawRealMeow(k + 1);
-        }, k * 1050);
+        }, k * 850);
       })(ws[i], i);
     }
+  }
+
+  // THE STAMP — the single-beat replacement for the old «Mèu ×4»
+  // sequence (owner's cut): the slogan disperses, ONE big paw
+  // print slams down at centre stage, ONE real cat answers (a
+  // single pick from the meow rotation), and a low thud + ring
+  // pulse land on the same beat as the print. ~1.1s, done.
+  function pawStamp(){
+    var sp = document.getElementById('stampPaw');
+    if (slogan) slogan.classList.add('out');
+    hideSel();
+    var cx = window.innerWidth / 2, cy = window.innerHeight * 0.44;
+    var cc = curEl();
+    if (!cc || cc.hidden) cursorShowAt(cx - 120, cy - 90);
+    cursorTo(cx - 6, cy - 10, 300);
+    if (sp){
+      sp.hidden = false;
+      sp.classList.remove('go', 'out');
+      void sp.offsetWidth;
+      sp.classList.add('go');
+    }
+    if (window.pawRealMeow) window.pawRealMeow(1);
+    later(function(){
+      cursorPress();
+      if (window.pawLock) window.pawLock();
+      ringBurst(cx, cy, 150, 'rgba(206,255,28,.9)');
+    }, 170);
+    later(function(){ if (sp) sp.classList.add('out'); }, 1020);
+    later(function(){ if (sp){ sp.hidden = true; sp.classList.remove('go', 'out'); } }, 1360);
   }
 
   // A glitch smear sweeps through the big title, letter by letter:
@@ -3567,7 +3771,7 @@
     cardCodeTimer = setTimeout(stepCard, 60);
   }
   // the cursor's card-theatre tour, offsets relative to its
-  // start (t=0 = 25.6s in the 40-second cut, right after the frame
+  // start (t=0 = 19.0s in the 30-second cut, right after the frame
   // draw): it clicks each piece in just after the piece lands
   // (head, title, slogan, contact, the status chip, the paw trail
   // — where it POKES the pink paw and the paw wiggles back — the
@@ -3580,66 +3784,66 @@
       var el = document.querySelector('[data-asm="head"]');
       if (el){ var r = el.getBoundingClientRect(); cursorTo(r.right - 8, r.top + r.height / 2); }
     }, 0);
-    later(function(){ cursorPress(); }, 550);
+    later(function(){ cursorPress(); }, 360);
     later(function(){
       var el = document.querySelector('[data-asm="title"]');
       if (el){ var r = el.getBoundingClientRect(); cursorTo(r.left + 14, r.top + r.height / 2); }
-    }, 900);
-    later(function(){ cursorPress(); }, 1450);
+    }, 585);
+    later(function(){ cursorPress(); }, 945);
     later(function(){
       var el = document.querySelector('[data-asm="slogan"]');
       if (el){ var r = el.getBoundingClientRect(); cursorTo(r.left + 12, r.top + r.height / 2); }
-    }, 1900);
-    later(function(){ cursorPress(); }, 2450);
+    }, 1235);
+    later(function(){ cursorPress(); }, 1595);
     later(function(){
       var el = document.querySelector('[data-asm="contact"]');
       if (el){ var r = el.getBoundingClientRect(); cursorTo(r.left + 10, r.top + r.height / 2); }
-    }, 2900);
-    later(function(){ cursorPress(); }, 3450);
+    }, 1885);
+    later(function(){ cursorPress(); }, 2245);
     later(function(){
       var el = document.querySelector('[data-asm="status"]');
       if (el){ var r = el.getBoundingClientRect(); cursorTo(r.left + 12, r.top + r.height / 2); }
-    }, 3900);
-    later(function(){ cursorPress(); }, 4450);
+    }, 2535);
+    later(function(){ cursorPress(); }, 2895);
     later(function(){
       var el = document.getElementById('wigPaw');
       if (el){ var r = el.getBoundingClientRect(); cursorTo(r.left + r.width / 2 - 4, r.top - 8); }
-    }, 4750);
+    }, 3090);
     later(function(){
       cursorPress();
       var el = document.getElementById('wigPaw');
       if (el){ el.classList.remove('wig'); void el.offsetWidth; el.classList.add('wig'); }
       if (window.pawStep) window.pawStep(true);
-    }, 5300);
+    }, 3445);
     later(function(){
       var el = document.querySelector('[data-asm="meudia"]');
       if (el){ var r = el.getBoundingClientRect(); cursorTo(r.left + 12, r.top + r.height / 2); }
-    }, 5650);
-    later(function(){ cursorPress(); }, 6150);
+    }, 3675);
+    later(function(){ cursorPress(); }, 4000);
     later(function(){
       var el = document.querySelector('[data-asm="divider"]');
       if (el){ var r = el.getBoundingClientRect(); cursorTo(r.left + 6, r.top); }
-    }, 6400);
+    }, 4160);
     later(function(){
       var el = document.querySelector('[data-asm="divider"]');
       if (el){ var r = el.getBoundingClientRect(); cursorTo(r.right - 6, r.top); }
       cursorPress();
-    }, 7000);
+    }, 4550);
     later(function(){
       cursorKind('ibeam');
       var el = document.querySelector('.card-copy');
       if (el){ var r = el.getBoundingClientRect(); cursorTo(r.left - 14, r.top + r.height / 2); }
-    }, 7200);
-    later(function(){ cursorPress(); cursorKind('arrow'); }, 7950);
+    }, 4680);
+    later(function(){ cursorPress(); cursorKind('arrow'); }, 5170);
     later(function(){
       var win = document.getElementById('codeWin');
       if (win && !win.hidden){ var r = win.getBoundingClientRect(); cursorTo(r.left + 13, r.top + 12); }
-    }, 8300);
-    later(function(){ cursorPress(); closeCodeWin(); }, 8850);
+    }, 5395);
+    later(function(){ cursorPress(); closeCodeWin(); }, 5755);
     later(function(){
       var card = document.getElementById('titleOpen');
       if (card){ var r = card.getBoundingClientRect(); cursorTo(r.right - 30, r.bottom + 12); }
-    }, 9450);
+    }, 6145);
   }
 
   // --- back-half density: all-aboard paws, texture bands,
@@ -3710,7 +3914,7 @@
           el.animate([
             { transform:'translate(' + (el._hx - el._sx) + 'px,' + (el._hy - el._sy) + 'px)', opacity:.55 },
             { transform:'translate(' + (ox - el._sx) + 'px,' + (oy - el._sy) + 'px)', opacity:.95 }
-          ], { duration:620, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards' });
+          ], { duration:430, easing:'cubic-bezier(.2,.8,.2,1)', fill:'forwards' });
         } catch(e){}
       })(standbyPaws[i], i);
     }
@@ -3733,7 +3937,7 @@
             ], { duration:520, easing:'cubic-bezier(.5,0,1,1)', fill:'forwards' });
           } catch(e){}
           setTimeout(function(){ el.remove(); }, 560);
-        }, k * 100);
+        }, k * 70);
       })(list[i], i);
     }
   }
@@ -3756,7 +3960,7 @@
     requestAnimationFrame(function(){ el.classList.add('on'); });
     if (window.sndPlaceRect) window.sndPlaceRect({ left:0, top:top, width:window.innerWidth, height:14 });
   }
-  // The paste: sixteen scan rows light up top→bottom over ~2.2s,
+  // The paste: sixteen scan rows light up top→bottom over ~1.5s,
   // each with a soft key tick and a scan-row note; every group of
   // four completed rows counts one honest capa.
   var pasteDone = false;
@@ -3779,11 +3983,11 @@
           rowEl.classList.add('on');
           if (window.pawKey) window.pawKey(0.3);
           if (window.sndScanRow) window.sndScanRow(k);
-          if (k === 3) statusSet(23);
-          else if (k === 7) statusSet(24);
-          else if (k === 11) statusSet(25);
-          else if (k === 15) statusSet(26);
-        }, k * 137);
+          if (k === 3) statusSet(14);
+          else if (k === 7) statusSet(15);
+          else if (k === 11) statusSet(16);
+          else if (k === 15) statusSet(17);
+        }, k * 75);
       })(rows[j], j);
     }
   }
@@ -3958,6 +4162,9 @@
     // used to sit at the very top of the page is gone for good.
     var crown = document.getElementById('cardCrown');
     if (crown) crown.classList.add('on');
+    // …and the overlay crown cross-fades out on the same beat —
+    // one crown, one seat, the handover the keeper was built for
+    crownHandover();
     gate.classList.add('leaving');
     if (!enterDispatched){
       enterDispatched = true;
@@ -3994,6 +4201,7 @@
     var sbn = document.getElementById('scanBand'); if (sbn) sbn.hidden = true;
     var spn = document.getElementById('scanPanel'); if (spn) spn.hidden = true;
     var tpx = document.getElementById('transPixel'); if (tpx) tpx.hidden = true;
+    crownKill();
     var cc = document.getElementById('cardCode'); if (cc) cc.hidden = true;
     var rc = document.getElementById('rulerCross'); if (rc) rc.hidden = true;
     var sb = document.getElementById('skipBtn'); if (sb) sb.hidden = true;
@@ -4068,40 +4276,40 @@
       if (sb && transitioning && !entered) sb.hidden = false;
     }, 1200);
 
-    // ============ ACT 1 · «拼标语» — 12 layers, 0–15s ============
-    // — 0–5s: the slogan «Aquí mana el gat» is tapped in word by
+    // ============ ACT 1 · «拼标语» — 10 layers, 0–9.0s ============
+    // — 0–3.5s: the slogan «Aquí mana el gat» is tapped in word by
     // word by the ONE cursor (white arrow, live readout), each word
     // keyed in over the keyboard layer and landing with its own
     // voice; Act 1's light arpeggio bed runs underneath from the
     // first second and NEVER stops — no silent dead air anywhere. —
     if (window.bedStart) window.bedStart('a');
     if (window.sndEntryArp) window.sndEntryArp();
-    var wordAt = [1000, 2000, 3000, 4000];
+    var wordAt = [750, 1500, 2250, 3000];
     later(function(){
       if (words[0]){
         var r0 = words[0].getBoundingClientRect();
         cursorShowAt(r0.left - 28, r0.top - 32);
       }
-    }, 620);
+    }, 470);
     for (var w = 0; w < words.length; w++){
       (function(word, at, k){
         later(function(){
           if (window.pawKeysBurst) window.pawKeysBurst(word.textContent.length, 0.8);
-        }, Math.max(60, at - 350));
+        }, Math.max(60, at - 260));
         later(function(){
           var r = word.getBoundingClientRect();
-          cursorTo(r.left + r.width / 2 - 6, r.top - 16, 360);
-        }, at - 320);
+          cursorTo(r.left + r.width / 2 - 6, r.top - 16, 270);
+        }, at - 240);
         later(function(){
           word.classList.add('in');
-          followSel(word, 480);
+          followSel(word, 360);
           cursorClickFx();
           later(function(){ if (window.pawWord) window.pawWord(k); }, 150);
           statusSet(k + 1);
         }, at);
       })(words[w], wordAt[w] || (1000 + w * 1000), w);
     }
-    // — 4.6s: the line LOCKS — the first half's loudest accent
+    // — 3.45s: the line LOCKS — the first half's loudest accent
     // (layered lock sound), the frame flashes and a ring bursts
     // out of the line's centre on the same beat. —
     later(function(){
@@ -4114,21 +4322,21 @@
         ringBurst(sr.left + sr.width / 2, sr.top + sr.height / 2, 120, 'rgba(206,255,28,.85)');
       }, 100);
       statusSet(5);
-    }, 4600);
-    later(cursorHide, 4900);
+    }, 3450);
+    later(cursorHide, 3680);
 
-    // — 4.95–10.35s: the EDIT performance. No scramble, no glyph
+    // — 3.7–7.65s: the EDIT performance. No scramble, no glyph
     // shuffle — the reference has none. The ONE cursor double-
     // clicks each word (selection-blue flash on the word itself),
     // deletes it and TYPES the Chinese word in its place, char by
     // char with caret and real key sounds; the finished wrong
-    // sentence then HOLDS ~1.3s so the joke can be read, before
+    // sentence then HOLDS ~0.85s so the joke can be read, before
     // the true line springs back. Event sounds throughout are the
     // engine's: snap, key, place. —
-    later(editPerformance, 4950);
-    later(function(){ statusSet(6); }, 6900);
-    later(function(){ statusSet(7); }, 8200);
-    // — 10.35s: the true line snaps back with a spring settle and
+    later(editPerformance, 3720);
+    later(function(){ statusSet(6); }, 5050);
+    later(function(){ statusSet(7); }, 6100);
+    // — 7.65s: the true line snaps back with a spring settle and
     // a ring burst; being a LOCK event, the line also sings its
     // place() note. —
     later(function(){
@@ -4146,112 +4354,111 @@
       statusSet(8);
       var sr2 = slogan.getBoundingClientRect();
       ringBurst(sr2.left + sr2.width / 2, sr2.top + sr2.height / 2, 90, 'rgba(255,255,255,.8)');
-      statusSet(9);
-    }, 10350);
+    }, 7650);
 
-    // — 10.5–14.7s: «Mèu ×4». The cursor lights each word with a
-    // tap at the exact moment that word's REAL cat answers —
-    // meow-1…4, spaced 1.05s apart, each tail fully decayed before
-    // the next cat speaks. —
-    later(startMeows, 10500);
-    later(function(){ statusSet(10); }, 10600);
-    later(function(){ statusSet(11); }, 12800);
-    later(function(){ if (meowEl) meowEl.classList.add('out'); }, 14700);
-    // — 15.0s: Act 1's closing line types itself into the status
-    // bar (one key per character), overlapping Act 2's first beat —
-    // the acts are stitched, never separated by a black gap. —
+    // — 7.85–9.0s: THE STAMP. The old «Mèu ×4» word-by-word
+    // lighting is gone (owner's cut): ONE beat instead — a big
+    // paw print slams down at centre stage with a single real
+    // cat answering (one pick from the meow rotation), a low
+    // thud and a ring pulse on the same frame, while the slogan
+    // disperses beneath it. One beat, ~1.1s, nothing after it. —
+    later(function(){ pawStamp(); statusSet(9); }, 7850);
+    // — 9.0s: Act 1's closing line types itself into the status
+    // bar (one key per character), overlapping Act 2's first
+    // beat — the acts are stitched, never separated by a gap. —
     later(function(){
       if (meowEl) meowEl.hidden = true;
-      statusSet(12);
-      statusLine('Acte I reconstruït en 15.0s');
+      statusSet(10);
+      statusLine('Acte I reconstruït en 9.0s');
       if (window.sndAct1End) window.sndAct1End();
-    }, 15000);
+    }, 9000);
 
-    // ============ ACT 2 · «建整页» — 20 layers, 15–40s ============
-    // — 15.3–16.1s: the slogan disperses; the status bar resets;
+    // ============ ACT 2 · «建整页» — 18 layers, 9.0–22.4s ============
+    // — 9.1–9.4s: the slogan disperses; the status bar resets;
     // the bed switches motif WITHOUT a gap; and the cursor CASTS —
     // a fast spiral flourish shedding trail dots, ending in a ring
     // burst that summons the big title out of the dark. —
     later(function(){
       if (slogan) slogan.classList.add('out');
       hideSel();
-    }, 15300);
+    }, 9150);
     later(function(){
       statusResetAct2();
       if (window.bedSwitch) window.bedSwitch('b');
       statusSet(1);
-    }, 15600);
+    }, 9400);
     later(function(){
       var cx = window.innerWidth / 2, cy = window.innerHeight * 0.4;
-      cursorTo(cx - 90, cy + 60, 350);
+      cursorTo(cx - 90, cy + 60, 280);
       var pts = [[-70, 34], [-38, -30], [26, -44], [66, 6], [30, 44]];
       for (var pi = 0; pi < pts.length; pi++){
         (function(p, k){
-          later(function(){ cursorTo(cx + p[0], cy + p[1], 80); }, 380 + k * 65);
+          later(function(){ cursorTo(cx + p[0], cy + p[1], 64); }, 300 + k * 52);
         })(pts[pi], pi);
       }
       later(function(){
         ringBurst(cx, cy, 110, 'rgba(206,255,28,.9)');
         if (window.pawDrag) window.pawDrag(true);
         if (window.pawSelect) window.pawSelect();
-      }, 720);
-    }, 15250);
-    // — 16.1–18.4s: the title «La casa de Lao Liu» pops small→big,
+      }, 580);
+    }, 9100);
+    // — 9.75–11.3s: the title «La casa de Lao Liu» pops small→big,
     // the horizontal smear wave sweeps its letters (stretch + a
     // touch of rotation), the wavy underline draws itself, and the
     // «Mèu~» bubble pops with a real meow. —
     later(function(){
       titleWrap.classList.add('in');
       statusSet(2);
-    }, 16050);
-    later(function(){ waveTitle(); statusSet(3); }, 16800);
-    later(function(){ if (titleWave) titleWave.classList.add('draw'); }, 17600);
+    }, 9750);
+    later(function(){ waveTitle(); statusSet(3); }, 10300);
+    later(function(){ if (titleWave) titleWave.classList.add('draw'); }, 10850);
     later(function(){
       if (meuBubble) meuBubble.classList.add('pop');
       if (window.pawRealMeow) window.pawRealMeow(2);
       statusSet(4);
-    }, 18200);
-    // — 18.55s: the pixel name «vov.cat» flickers in DIRECTLY at
-    // its crown seat above the card (its position was measured and
-    // fixed before the show started — it never appears at the top
-    // of the screen, never anywhere else first). —
+    }, 11300);
+    // — 11.55s: the pixel name «vov.cat» flickers in DIRECTLY at
+    // its crown seat above the card (it never appears at the top
+    // of the screen, never anywhere else first), rendered from
+    // here on by the crown overlay's own rAF keeper. —
     later(function(){
       var px = document.getElementById('transPixel');
       if (px){
         px.hidden = false;
         requestAnimationFrame(function(){ px.classList.add('in'); });
       }
+      // the crown is rendered by its own top-layer keeper from
+      // this beat on — seated above the card, lit until handover
+      crownShow();
       if (window.pawSelect) window.pawSelect();
-    }, 18550);
-    // — 18.9–21.2s: the cursor turns ORANGE, grips the paw and arcs
+    }, 11550);
+    // — 11.8–13.5s: the cursor turns ORANGE, grips the paw and arcs
     // it home to the crown lockup: five steps, footprints, a slow
     // spin, an overshoot-and-snap-back at the end, lock sparkles —
     // then the crown settles: letters bounce in, the light sweep
     // runs through the glyphs, the cursor nudges the name home
     // and clicks to confirm. —
-    later(function(){ roamToLogo(); statusSet(5); }, 18900);
-    later(function(){ statusSet(6); }, 21200);
-    later(crownSettle, 21250);
-    // — 21.4s: the gray flash; the page base lifts to dark gray.
+    later(function(){ roamToLogo(); statusSet(5); }, 11800);
+    later(function(){ statusSet(6); }, 13450);
+    later(crownSettle, 13500);
+    // — 13.6s: the gray flash; the page base lifts to dark gray.
     // The crown lockup stays exactly where it is; the title hands
     // over only as the card theatre opens beneath it. —
-    later(function(){ grayFlashStage(); statusSet(7); }, 21400);
+    later(function(){ grayFlashStage(); statusSet(7); }, 13600);
     later(function(){
       titleWrap.classList.remove('in');
       titleWrap.style.animation = 'none';
       void titleWrap.offsetWidth;
       titleWrap.classList.add('settle');
-    }, 22600);
-    // — 23.0s on: the card theatre. The gate's black lifts (the
-    // ASCII background still waits for the finale), scanlines
-    // swell, and the cursor starts its tour: hairline band dragged
-    // across, wireframe drawn, then every piece lands, decodes
-    // itself within ~0.4s and is clicked in by the cursor — the
-    // card head, title, slogan, the contact row in the right
-    // column, then the column's fun cluster (status chip, paw
-    // trail — the cursor pokes the pink paw and it wiggles — and
-    // the «Mèu del dia»), the divider, and the © line typed under
-    // an I-beam, while casa.js types itself live in its window. —
+    }, 14450);
+    // — 14.75s on: the card theatre, SHORT cut. The gate's black
+    // lifts, a hairline band is placed, the cursor DRAWS the card
+    // frame — and the moment the frame completes, ALL the card's
+    // content lights up AT ONCE as one body (head, title, slogan,
+    // contact row, the fun cluster, divider, © line — no more
+    // per-piece landings, no © typing, no casa.js window: the
+    // owner cut them for length). The standby paws fly in round
+    // the settled card. —
     later(function(){
       gate.classList.add('clear');
       gate.classList.add('crt-boost');
@@ -4261,42 +4468,25 @@
       var cc0 = curEl();
       if (!cc0 || cc0.hidden) cursorShowAt(window.innerWidth * 0.72, window.innerHeight * 0.3);
       else cursorTo(window.innerWidth * 0.72, window.innerHeight * 0.3, 320);
-    }, 23000);
-    later(function(){ placeHairline(); fadePrints(); statusSet(8); }, 23400);
-    later(function(){ drawCardFrame(); statusSet(9); }, 23800);
-    later(cursorTour, 25600);
-    later(function(){ landEl('head'); statusSet(10); }, 24400);
-    later(function(){ startCodeWin(); }, 25300);
-    later(function(){ flyInPaws(); statusSet(11); }, 25000);
-    later(function(){ landEl('title'); statusSet(12); }, 25500);
-    later(function(){ landEl('slogan'); statusSet(13); }, 26600);
-    later(function(){ landEl('contact'); statusSet(14); }, 27600);
-    later(function(){ landEl('status'); statusSet(15); }, 28500);
-    later(function(){ landEl('trail'); statusSet(16); }, 29300);
-    later(function(){ landEl('meudia'); statusSet(17); }, 30100);
-    later(function(){
-      var dv = document.querySelector('[data-asm="divider"]');
-      if (dv) dv.classList.add('landed');
-      if (window.pawSweep) window.pawSweep();
-      statusSet(18);
-    }, 30900);
-    later(function(){ landEl('copy'); statusSet(19); }, 31700);
-    later(typeCopyLine, 31850);
-    later(function(){ typeCardCode(); statusSet(20); }, 32600);
-    // — 33.3–36.4s: the TEXTURE segment. Two more full-width
-    // bands are dragged in under size badges (the hairline at
-    // 23.4s was the first), then the whole screen is "pasted":
-    // sixteen scan rows light top→bottom over ~2.2s, each row a
-    // soft tick + a scan-row note, every four rows one capa —
-    // while a red guide crosses each way and their crossing
-    // point carries the coordinate plate. —
-    later(function(){ texBand(2); statusSet(21); }, 33300);
-    later(function(){ texBand(3); statusSet(22); }, 33650);
-    later(pasteScan, 34100);
-    later(showGuideH, 35200);
-    later(showGuideV, 36000);
-    // ================= COMPLETION + REVEAL · 36.6–40.3s =================
-    // — 36.6s: the SURGE — the completion magnitude, kept strictly
+    }, 14750);
+    later(function(){ placeHairline(); fadePrints(); statusSet(8); }, 15050);
+    later(function(){ drawCardFrame(); statusSet(9); }, 15300);
+    later(function(){ groupReveal(); statusSet(10); }, 17250);
+    later(function(){ flyInPaws(); statusSet(11); }, 17550);
+    // — 18.05–19.75s: the TEXTURE segment, tightened to ~1.2s of
+    // paste. Two more full-width bands under size badges (the
+    // hairline at 15.05s was the first), then sixteen scan rows
+    // light top→bottom at 75ms a row, each row a soft tick + a
+    // scan-row note, every four rows one capa — while a red guide
+    // crosses each way and their crossing point carries the
+    // coordinate plate. —
+    later(function(){ texBand(2); statusSet(12); }, 18050);
+    later(function(){ texBand(3); statusSet(13); }, 18300);
+    later(pasteScan, 18600);
+    later(showGuideH, 19300);
+    later(showGuideV, 19750);
+    // ================= COMPLETION + REVEAL · 20.2–22.85s =================
+    // — 20.2s: the SURGE — the completion magnitude, kept strictly
     // separate from the construction texture: the E add9 chord +
     // pad, a ring burst over the finished card, the closing line
     // typed on the status bar, the weave stopped dead. The
@@ -4305,8 +4495,8 @@
       if (cardFrame) cardFrame.classList.add('done');
       if (window.weaveStop) window.weaveStop();
       if (window.pawSting) window.pawSting();
-      statusSet(27);
-      statusLine('Reconstruït en 40.0s');
+      statusSet(18);
+      statusLine('Reconstruït en 22.4s');
       var card = document.getElementById('titleOpen');
       if (card){
         var cr = card.getBoundingClientRect();
@@ -4323,27 +4513,27 @@
         var cxEl = document.getElementById('rulerCross'); if (cxEl) cxEl.hidden = true;
       }, 400);
       if (hairEl) hairEl.hidden = true;
-    }, 36600);
-    // — 37.2–38.2s: the standby paws salute — half an orbit round
+    }, 20200);
+    // — 20.65–21.1s: the standby paws salute — half an orbit round
     // the card — then accelerate out of the frame on BOTH sides,
-    // staggered 0.1s apart. —
-    later(orbitPaws, 37200);
-    later(flyOutPaws, 37900);
-    // — 38.3–39.7s: the PRESENT. The cursor glides to the card,
-    // holds half a second, presses once (the trigger), holds
-    // 0.4s — then the stage falls to near-silence: weave gone,
-    // pad decayed, nothing scheduled. —
-    later(presentCursor, 38300);
-    later(function(){ cursorPress(); }, 38800);
+    // staggered 0.07s apart. —
+    later(orbitPaws, 20650);
+    later(flyOutPaws, 21100);
+    // — 21.4–22.35s: the PRESENT. The cursor glides to the card,
+    // presses once (the trigger) — then the stage falls to ~0.6s
+    // of near-silence: weave gone, pad decayed, nothing scheduled.
+    // That held breath is the reveal's whole setup. —
+    later(presentCursor, 21400);
+    later(function(){ cursorPress(); }, 21750);
     later(function(){
       gate.classList.remove('crt-boost');
       gate.classList.remove('scan-band');
       statusHide(true);
-    }, 39200);
-    // — 39.7s: THE REVEAL — the loudest single transient of the
+    }, 22000);
+    // — 22.35s: THE REVEAL — the loudest single transient of the
     // show and one full-screen white flash on the SAME frame; as
     // the flash recedes the ASCII background is already lighting
-    // up beneath it, swept by the wavefront in ~1s. After this:
+    // up beneath it, swept by the wavefront in ~0.8s. After this:
     // silence — no chime, no release tail. —
     later(function(){
       if (window.pawFinale) window.pawFinale();
@@ -4355,13 +4545,13 @@
         setTimeout(function(){ wfEl.classList.remove('on'); }, 1150);
       }
       completeReveal();
-    }, 39700);
-    // — 40.15s: the cursor signs its paw print, silently. 40.3s:
-    // 老六 greets — the bubble delayed ~0.6s after the flash. —
-    later(function(){ signaturePaw(true); }, 40150);
+    }, 22350);
+    // — 22.7s: the cursor signs its paw print, silently. 22.85s:
+    // 老六 greets — the bubble delayed ~0.5s after the flash. —
+    later(function(){ signaturePaw(true); }, 22700);
     later(function(){
       window.dispatchEvent(new Event('laoliu-greet'));
-    }, 40300);
+    }, 22850);
   }
 
   // Entry is triggered ONLY by the paw button's own pointerdown —
@@ -4901,12 +5091,12 @@
     if (ptrTargetStrength === 0 && ptrStrength < 0.004) ptrStrength = 0;
   }
   var posterImg = null, posterReady = false, videoFailed = false;
-  // Scan wavefront (finale): a front sweeps left→right over ~2.2s —
+  // Scan wavefront (finale): a front sweeps left→right over ~0.8s —
   // cells ahead of it stay black, cells inside its 100px band take
   // random glyphs, cells behind it are stable. prevB holds each
   // cell's previous brightness for temporal smoothing (frame mixed
   // with frame), which kills charset-threshold flicker everywhere.
-  var wf = { active:false, t0:0, dur:1000 };
+  var wf = { active:false, t0:0, dur:800 };
   var prevB = null;
   function wfFront(now){
     if (!wf.active) return -9999;
