@@ -512,8 +512,91 @@
   body.card-in:not(.entered) .stage{opacity:1;pointer-events:none}
   body.card-in:not(.entered) .bg-stage{opacity:0}
   body.card-in:not(.entered) .music-player{opacity:0;pointer-events:none}
-  body.card-in .title-zone{animation:cardForm .55s cubic-bezier(.2,1.3,.4,1) both}
+  body.card-in:not(.assembling) .title-zone{animation:cardForm .55s cubic-bezier(.2,1.3,.4,1) both}
   @keyframes cardForm{from{opacity:0;transform:scale(.9) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
+  /* ---------- full-length transition, stages A–D ---------- */
+  /* A: scramble / glitch line that the locked slogan dissolves into */
+  .trans-scramble{
+    margin:0;max-width:92vw;text-align:center;
+    font-family:"Baloo 2","PingFang SC",sans-serif;font-weight:800;
+    font-size:clamp(1.25rem,4.6vw,2.1rem);line-height:1.35;color:var(--ink);
+    text-shadow:0 2px 16px rgba(0,0,0,.9);
+    transition:transform .45s ease, opacity .45s ease;
+  }
+  .trans-scramble.out{transform:scale(.6) translateY(10px);opacity:0}
+  /* B: hand-drawn wavy underline sweeping under the big title */
+  .title-wave{display:block;width:84%;height:18px;margin:12px auto 0;overflow:visible}
+  .title-wave path{
+    fill:none;stroke:var(--lime);stroke-width:3.5;stroke-linecap:round;
+    stroke-dasharray:100;stroke-dashoffset:100;
+    filter:drop-shadow(0 0 6px rgba(206,255,28,.55));
+  }
+  .title-wave.draw path{transition:stroke-dashoffset .85s ease .05s;stroke-dashoffset:0}
+  .trans-titlewrap.settle{transition:transform .65s ease, opacity .65s ease;transform:scale(.55) translateY(30px);opacity:0}
+  /* C: the intro card rebuilt as a wireframe, piece by piece */
+  .title-zone{
+    position:relative;
+    border:1.5px solid transparent;border-radius:20px;
+    padding:16px 22px 14px;
+    display:flex;flex-direction:column;align-items:center;
+    transition:border-color .8s ease, background-color .8s ease;
+  }
+  body.card-in .title-zone,body.entered .title-zone{
+    border-color:rgba(74,50,32,.95);
+    background:rgba(20,12,6,.55);
+  }
+  .card-frame{position:absolute;inset:-1.5px;opacity:0;pointer-events:none;transition:opacity .5s ease}
+  body.assembling .card-frame{opacity:1}
+  .card-frame.done{opacity:0 !important}
+  .card-frame svg{display:block;width:100%;height:100%}
+  .card-frame rect{
+    fill:none;stroke:rgba(206,255,28,.55);stroke-width:1.5;
+    stroke-dasharray:100;stroke-dashoffset:100;
+  }
+  .card-frame.draw rect{transition:stroke-dashoffset 1.6s linear;stroke-dashoffset:0}
+  body.assembling [data-asm]{
+    opacity:0;transform:translateY(10px) scale(.96);pointer-events:none;
+  }
+  body.assembling [data-asm].landed{
+    opacity:1;transform:translateY(0) scale(1);pointer-events:auto;
+    transition:opacity .45s ease, transform .5s cubic-bezier(.2,1.5,.4,1);
+  }
+  body.assembling [data-asm="divider"]{transform:scaleX(0);transform-origin:left center}
+  body.assembling [data-asm="divider"].landed{transform:scaleX(1);transition:transform .6s ease, opacity .3s ease}
+  body.assembling .fx-particles{opacity:0}
+  .fx-particles{transition:opacity .8s ease}
+  .card-head{
+    display:flex;align-items:center;gap:9px;
+    font-family:"Baloo 2","PingFang SC",sans-serif;font-weight:800;
+    font-size:1rem;color:var(--ink);
+  }
+  .card-head svg{width:22px;height:22px;fill:var(--lime);filter:drop-shadow(0 0 6px rgba(206,255,28,.6))}
+  .card-head .ca{color:var(--ink-soft);font-size:.88rem;font-weight:700}
+  .card-title h1{margin-top:2px}
+  .card-slogan{
+    margin:8px 0 0;font-family:"Baloo 2","PingFang SC",sans-serif;font-weight:700;
+    font-size:.98rem;color:var(--accent-strong);text-shadow:0 2px 10px rgba(0,0,0,.85);
+  }
+  .card-slogan .cn{font-family:"Nunito","PingFang SC",sans-serif;font-size:.85rem;color:var(--ink-soft);font-weight:700}
+  .card-links{align-self:stretch;text-align:right;margin-top:8px;display:flex;flex-direction:column;gap:2px}
+  .card-links a{
+    color:var(--ink);font-weight:800;font-size:.86rem;text-decoration:none;
+    text-shadow:0 1px 8px rgba(0,0,0,.9);
+  }
+  .card-links a:hover{color:var(--lime);text-decoration:underline}
+  .card-links a .net{color:var(--lime);font-family:"Baloo 2",sans-serif}
+  .card-divider{
+    align-self:stretch;height:2px;margin:10px 0 0;border-radius:2px;
+    background:linear-gradient(90deg, rgba(206,255,28,.15), rgba(206,255,28,.65), rgba(206,255,28,.15));
+  }
+  .card-copy{margin:8px 0 0;font-size:.74rem;font-weight:700;color:var(--ink-soft);letter-spacing:.04em}
+  @media (max-width:640px){
+    .title-zone{padding:13px 14px 11px}
+    .card-links{text-align:center;align-items:center}
+    .card-head{font-size:.92rem}
+    .card-slogan{font-size:.9rem}
+  }
 
   /* ---------- floating music player ---------- */
   .music-player{
@@ -623,6 +706,11 @@
   @media (max-height:600px){
     .bubble{display:none}
     h1{font-size:clamp(1.3rem,4.5vw,2rem)}
+    .title-zone{padding:10px 16px 8px}
+    .card-slogan{margin-top:4px}
+    .card-links{margin-top:4px}
+    .card-divider{margin-top:6px}
+    .card-copy{margin-top:5px}
   }
   @media (prefers-reduced-motion: reduce){
     .meow-btn,.menu button,.title-zone,.hint{transition:none}
@@ -660,7 +748,10 @@
       <p class="trans-slogan" id="transSlogan"><span>Aquí</span><span>mana</span><span>el</span><span>gat</span></p>
     </div>
     <div class="trans-pos">
-      <div class="trans-titlewrap" id="transTitleWrap">La casa de <span class="name">Lao&nbsp;Liu</span><span class="meu-bubble" id="meuBubble">Mèu~</span></div>
+      <div class="trans-titlewrap" id="transTitleWrap">La casa de <span class="name">Lao&nbsp;Liu</span><span class="meu-bubble" id="meuBubble">Mèu~</span><svg class="title-wave" id="titleWave" viewBox="0 0 300 22" preserveAspectRatio="none" aria-hidden="true"><path pathLength="100" d="M6 13 Q 26 5, 46 13 T 86 13 T 126 13 T 166 13 T 206 13 T 246 13 T 294 13"/></svg></div>
+    </div>
+    <div class="trans-pos">
+      <p class="trans-scramble" id="transScramble" hidden></p>
     </div>
     <div class="trans-fly" id="transFly"></div>
     <div class="sel-box" id="selBox" hidden><i class="sel-h tl"></i><i class="sel-h tr"></i><i class="sel-h bl"></i><i class="sel-h br"></i><span class="sel-tag" id="selTag">0 x 0</span></div>
@@ -689,8 +780,22 @@
   <main class="center">
     <div class="orbit-ring" id="orbitRing" aria-hidden="true"></div>
     <div class="title-zone" id="titleOpen" role="button" tabindex="0" aria-haspopup="dialog" aria-expanded="false" aria-label="Obrir la presentació 打开介绍">
-      <h1>Benvinguts a casa de <span class="name">Lao&nbsp;Liu</span></h1>
-      <p class="name-line"><span class="cat-name">老六</span> · 欢迎来到老六的家</p>
+      <div class="card-frame" id="cardFrame" aria-hidden="true"><svg preserveAspectRatio="none" viewBox="0 0 100 100"><rect x="1" y="1" width="98" height="98" pathLength="100"/></svg></div>
+      <div class="card-head" data-asm="head">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 13.2c2.9 0 5.6 2.3 5.6 4.6 0 1.5-1.1 2.4-2.7 2.4-1 0-1.8-.4-2.9-.4s-1.9.4-2.9.4c-1.6 0-2.7-.9-2.7-2.4 0-2.3 2.7-4.6 5.6-4.6Z"/><ellipse cx="5.4" cy="10.4" rx="1.9" ry="2.4" transform="rotate(-18 5.4 10.4)"/><ellipse cx="9.2" cy="7.4" rx="2" ry="2.6" transform="rotate(-6 9.2 7.4)"/><ellipse cx="14.8" cy="7.4" rx="2" ry="2.6" transform="rotate(6 14.8 7.4)"/><ellipse cx="18.6" cy="10.4" rx="1.9" ry="2.4" transform="rotate(18 18.6 10.4)"/></svg>
+        <span>老六的家 · vov.cat</span><span class="ca">La casa de Lao Liu</span>
+      </div>
+      <div class="card-title" data-asm="title">
+        <h1>Benvinguts a casa de <span class="name">Lao&nbsp;Liu</span></h1>
+        <p class="name-line"><span class="cat-name">老六</span> · 欢迎来到老六的家</p>
+      </div>
+      <p class="card-slogan" data-asm="slogan">On els somnis tenen bigotis <span class="cn">· 梦长胡子的地方</span></p>
+      <div class="card-links" data-asm="links">
+        <a href="https://x.com/MliamPP" target="_blank" rel="noopener"><span class="net">X</span> · @MliamPP</a>
+        <a href="https://github.com/v9auto" target="_blank" rel="noopener"><span class="net">GitHub</span> · v9auto</a>
+      </div>
+      <div class="card-divider" data-asm="divider" aria-hidden="true"></div>
+      <p class="card-copy" data-asm="copy">© vov.cat · Fet amb amor · No està en venda</p>
     </div>
     <p class="typewriter" id="typewriter"><span id="typeText"></span><span class="type-caret" id="typeCaret" aria-hidden="true"></span></p>
     <p class="hint" id="hintText">Fes clic per veure-ho</p>
@@ -998,6 +1103,83 @@
     } catch(e){ /* no audio: stay silent */ }
   };
   window.pawClick = function(){ window.pawPop(0.2); };
+  // Pop with a pitch multiplier — the card-assembly landings alternate
+  // between a higher and a lower variant so the sequence feels played.
+  window.pawPopPitch = function(peak, mult){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      blip(ctx, 'sine', 520 * mult, 180 * mult, 0.15, peak, 0);
+      blip(ctx, 'triangle', 2500 * mult, 1100 * mult, 0.03, peak * 0.45, 0);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+  // Scramble blip: one tiny random-pitch tick (peak ≈ 0.05); the
+  // transition fires these every 60–90ms while the slogan glitches.
+  window.pawBlip = function(){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      var f = 280 + Math.random() * 760;
+      blip(ctx, 'triangle', f, f * (0.6 + Math.random() * 0.5), 0.045, 0.05, 0);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+  // Gentle two-note "meow": two descending sine glides, ≈0.35s, peak 0.15.
+  window.pawMeow = function(){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      blip(ctx, 'sine', 760, 585, 0.17, 0.15, 0);
+      blip(ctx, 'sine', 640, 470, 0.18, 0.13, 0.17);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+  var noiseBuf = null;
+  function getNoise(ctx){
+    if (noiseBuf) return noiseBuf;
+    var len = Math.floor(ctx.sampleRate * 0.8);
+    noiseBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+    var d = noiseBuf.getChannelData(0);
+    for (var i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    return noiseBuf;
+  }
+  function noiseSweep(f0, f1, dur, peak, delay){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      var t = ctx.currentTime + (delay || 0);
+      var src = ctx.createBufferSource();
+      src.buffer = getNoise(ctx);
+      var bp = ctx.createBiquadFilter();
+      bp.type = 'bandpass'; bp.Q.value = 1.1;
+      bp.frequency.setValueAtTime(f0, t);
+      bp.frequency.exponentialRampToValueAtTime(f1, t + dur);
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + dur * 0.3);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(bp); bp.connect(g); g.connect(ctx.destination);
+      src.start(t); src.stop(t + dur + 0.05);
+    } catch(e){ /* no audio: stay silent */ }
+  }
+  // Whoosh for the paw's flight home: band-swept noise, peak ≈ 0.08.
+  window.pawWhoosh = function(){ noiseSweep(420, 2500, 0.65, 0.08, 0); };
+  // Faint scratch for the divider sweeping across, peak ≈ 0.05.
+  window.pawSweep = function(){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try { blip(ctx, 'sine', 240, 1020, 0.5, 0.045, 0); } catch(e){}
+    noiseSweep(900, 3200, 0.45, 0.03, 0);
+  };
+  // Soft two-note completion chime when the card is finished, peak ≈ 0.12.
+  window.pawChime = function(){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      blip(ctx, 'sine', 1568, 1560, 0.5, 0.07, 0);
+      blip(ctx, 'triangle', 3136, 3110, 0.3, 0.02, 0);
+      blip(ctx, 'sine', 2093, 2080, 0.6, 0.05, 0.13);
+      blip(ctx, 'triangle', 4186, 4160, 0.35, 0.015, 0.13);
+    } catch(e){ /* no audio: stay silent */ }
+  };
   // Prime the context on the visitor's very first pointer press anywhere,
   // so every later programmatic sound (ticks, button pops) starts from an
   // already-running context.
@@ -1193,12 +1375,65 @@
     }
   }
 
+  // --- stages A–D helpers ---
+  var scrambleEl = document.getElementById('transScramble');
+  var titleWave = document.getElementById('titleWave');
+  var cardFrame = document.getElementById('cardFrame');
+  var MIXED = 'Aquí el gat és el jefe 这里的猫是老大';
+  var GLYPH = 'ABCDEFKLMNPRSTXZ#$%&@/=*+老六猫是老大gatjefe';
+  var scrambleInt = 0;
+  function stopScramble(){
+    if (scrambleInt){ clearInterval(scrambleInt); scrambleInt = 0; }
+  }
+  // Stage A: the locked slogan glitches — characters shuffle fast with
+  // random blips, a machine-translated mixed sentence flickers through,
+  // then everything collapses away so the big title can form.
+  function startScramble(){
+    if (!scrambleEl) return;
+    slogan.style.visibility = 'hidden';
+    hideSel();
+    scrambleEl.hidden = false;
+    var t0 = Date.now(), DUR = 1200;
+    scrambleInt = setInterval(function(){
+      var el = (Date.now() - t0) / DUR;
+      if (el >= 1){
+        stopScramble();
+        scrambleEl.classList.add('out');
+        setTimeout(function(){ scrambleEl.hidden = true; }, 480);
+        return;
+      }
+      // first half pure shuffle; second half the mixed sentence
+      // progressively resolves out of the noise
+      var reveal = el < 0.5 ? 0 : Math.floor((el - 0.5) * 2 * MIXED.length);
+      var out = '';
+      for (var i = 0; i < MIXED.length; i++){
+        var ch = MIXED[i];
+        if (ch === ' ' || ch === '·' || i < reveal) out += ch;
+        else out += GLYPH[Math.floor(Math.random() * GLYPH.length)];
+      }
+      scrambleEl.textContent = out;
+      if (Math.random() < 0.75 && window.pawBlip) window.pawBlip();
+    }, 75);
+  }
+  // Stage C landing: an element pops in, the selection frame hugs it
+  // briefly with live dimensions, and a soft alternating pop plays.
+  function landEl(name, mult){
+    var el = document.querySelector('[data-asm="' + name + '"]');
+    if (!el) return;
+    el.classList.add('landed');
+    followSel(el, 560);
+    later(function(){ hideSel(); }, 600);
+    if (window.pawPopPitch) window.pawPopPitch(0.16, mult);
+  }
+
   function completeReveal(){
     if (entered) return;
     entered = true;
     transitioning = false;
+    stopScramble();
     hideSel();
     if (transStage) transStage.hidden = true;
+    document.body.classList.remove('assembling');
     document.body.classList.add('entered');
     gate.classList.add('leaving');
     if (!enterDispatched){
@@ -1210,6 +1445,9 @@
   function finishEnter(){ // skip: jump straight to the end state
     if (entered) return;
     clearTimers();
+    stopScramble();
+    if (scrambleEl) scrambleEl.hidden = true;
+    document.body.classList.remove('assembling');
     document.body.classList.add('card-in');
     completeReveal();
   }
@@ -1218,7 +1456,7 @@
     if (entered || transitioning) return;
     if (hintTimer) clearInterval(hintTimer);
     if (reduceMotion || !transStage || !slogan || !titleWrap){
-      // reduced motion: quick fades only, sounds unchanged
+      // reduced motion: one short fade, only the entry pop sounds
       document.body.classList.add('card-in');
       completeReveal();
       return;
@@ -1229,9 +1467,9 @@
     scatterRing();
     transStage.hidden = false;
 
-    // slogan assembles word by word; the selection frame hops to each
-    // word as it lands and a soft tick marks the landing
-    var wordAt = [300, 720, 1140, 1560];
+    // — front section (kept): slogan «Aquí mana el gat» assembles word
+    // by word, selection frame hopping, tick on each landing —
+    var wordAt = [350, 850, 1350, 1850];
     for (var w = 0; w < words.length; w++){
       (function(word, at, withGhost){
         later(function(){
@@ -1240,9 +1478,9 @@
           later(function(){ if (window.pawTick) window.pawTick(); }, 150);
           if (withGhost) later(function(){ spawnGhost(word); }, 90);
         }, at);
-      })(words[w], wordAt[w] || (300 + w * 420), w === 1);
+      })(words[w], wordAt[w] || (350 + w * 500), w === 1);
     }
-    // sentence complete: the frame takes the whole line and flashes once
+    // sentence complete: frame takes the whole line, flash + "clack"
     later(function(){
       followSel(slogan, 80);
       later(function(){
@@ -1250,26 +1488,61 @@
         if (selBox) selBox.classList.add('flash');
         if (window.pawLock) window.pawLock();
       }, 100);
-    }, 2080);
-    // morph: slogan shrinks away, the big title takes its place
+    }, 2400);
+
+    // — Stage A (≈ recording 22–25s): glitch scramble with blips,
+    // the mixed machine-translated sentence flickers through —
+    later(startScramble, 2700);
+    // characters collapse into the big title
+    later(function(){ titleWrap.classList.add('in'); }, 4050);
+
+    // — Stage B (≈ 26–28s): wavy underline sweeps under the title,
+    // the «Mèu~» bubble pops with a two-note meow, title holds, then
+    // shrinks and moves off toward the card —
+    later(function(){ if (titleWave) titleWave.classList.add('draw'); }, 4800);
     later(function(){
-      slogan.classList.add('out');
-      hideSel();
-    }, 2280);
-    later(function(){ titleWrap.classList.add('in'); }, 2380);
-    // a lime «Mèu~» bubble pops at the title's corner, then goes
-    later(function(){ if (meuBubble) meuBubble.classList.add('pop'); }, 3080);
-    later(function(){ if (meuBubble) meuBubble.classList.add('out'); }, 3720);
-    // title settles away; the gate's black lifts and the paw flies home
+      if (meuBubble) meuBubble.classList.add('pop');
+      if (window.pawMeow) window.pawMeow();
+    }, 4950);
+    later(function(){ titleWrap.classList.add('settle'); }, 6050);
+
+    // — Stage C (≈ 28–41s): the intro card assembles wireframe-style.
+    // The gate's black lifts (background stays black: the ASCII stage
+    // only fades in at the very end), the frame draws itself, then
+    // each piece lands inside a selection frame with a soft pop. —
     later(function(){
-      titleWrap.classList.add('out');
       gate.classList.add('clear');
+      document.body.classList.add('assembling');
+      document.body.classList.add('card-in');
+    }, 6550);
+    later(function(){ if (cardFrame) cardFrame.classList.add('draw'); }, 6650);
+    later(function(){ if (cardFrame) cardFrame.classList.add('done'); }, 8350);
+    // ① paw icon flies home with a whoosh + three trailing paws, then
+    // the card head (paw + site name) lands
+    later(function(){
+      if (window.pawWhoosh) window.pawWhoosh();
       startFlight();
-    }, 3980);
-    // the intro card forms as the paw arrives
-    later(function(){ document.body.classList.add('card-in'); }, 4700);
-    // background, menu row and player fade in last
-    later(completeReveal, 5050);
+    }, 8450);
+    later(function(){ landEl('head', 1.18); }, 9150);
+    // the title block lands next
+    later(function(){ landEl('title', 0.88); }, 9800);
+    // ② Catalan slogan line
+    later(function(){ landEl('slogan', 1.1); }, 10500);
+    // ③ right-hand link column: X + GitHub
+    later(function(){ landEl('links', 0.94); }, 11200);
+    // ④ divider sweeps across with a faint scratch
+    later(function(){
+      var dv = document.querySelector('[data-asm="divider"]');
+      if (dv) dv.classList.add('landed');
+      if (window.pawSweep) window.pawSweep();
+    }, 11900);
+    // ⑤ small print fades in, centred under the card
+    later(function(){ landEl('copy', 1.0); }, 12600);
+
+    // — Stage D (≈ 42–44s): completion chime, then the ASCII
+    // background, menu row, music player and footer fade in last —
+    later(function(){ if (window.pawChime) window.pawChime(); }, 13200);
+    later(completeReveal, 13500);
   }
 
   // The pop must start inside the pointer gesture itself: create/resume
@@ -1383,6 +1656,12 @@
     })(openers[i]);
   }
   var titleZone = document.getElementById('titleOpen');
+  // the card's X / GitHub links navigate out; they must not also open
+  // the Presentació panel via the title zone's own click handler
+  var cardLinks = titleZone.querySelectorAll('.card-links a');
+  for (var li = 0; li < cardLinks.length; li++){
+    cardLinks[li].addEventListener('click', function(e){ e.stopPropagation(); });
+  }
   titleZone.addEventListener('click', function(){ if (window.pawClick) window.pawClick(); openPanel('panel-presentacio', titleZone); });
   titleZone.addEventListener('keydown', function(e){
     if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openPanel('panel-presentacio', titleZone); }
