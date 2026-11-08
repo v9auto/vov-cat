@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>vov.cat 视频诊断</title>
+<style>
+body{background:#000;color:#0f0;font-family:monospace;font-size:14px;margin:0;padding:12px}
+h3{color:#fff}
+pre{white-space:pre-wrap;word-break:break-all}
+video{width:150px;height:92px;background:#222;display:block;margin:6px 0 14px}
+button{font-size:18px;padding:10px 16px;margin:8px 0}
+.lbl{color:#fff;margin-top:10px}
+</style>
+</head>
+<body>
+<h3>vov.cat 视频诊断页</h3>
+<button id="go">▶ 点我重试播放</button>
+<div class="lbl">A = 相对地址 bg.mp4（与音乐同一条路）</div>
+<video id="vA" muted playsinline webkit-playsinline preload="auto" src="bg.mp4"></video>
+<div class="lbl">B = 绝对地址 vov.cat/bg.mp4（现行主页用的主源）</div>
+<video id="vB" muted playsinline webkit-playsinline preload="auto" src="https://vov.cat/bg.mp4"></video>
+<pre id="log">等待开始…</pre>
+<script>
+var L=[];var logEl=document.getElementById('log');
+function log(s){L.push(s);logEl.textContent=L.join('\n');}
+log('UA: '+navigator.userAgent);
+try{var c0=document.createElement('canvas');log('WebGL支持: '+!!(c0.getContext('webgl')||c0.getContext('experimental-webgl')));}catch(e){log('WebGL检测异常: '+e.message);}
+function probe(name,v){
+  var evs=['loadstart','canplay','playing','pause','error','stalled','suspend','waiting'];
+  for(var i=0;i<evs.length;i++){(function(e){v.addEventListener(e,function(){log(name+' 事件 '+e+' readyState='+v.readyState+' networkState='+v.networkState+(v.error?(' errorCode='+v.error.code):''));});})(evs[i]);}
+  var last=-1,still=0,t=0;
+  var iv=setInterval(function(){t++;
+    log(name+' t='+t+'s currentTime='+v.currentTime.toFixed(2)+' paused='+v.paused+' readyState='+v.readyState);
+    if(Math.abs(v.currentTime-last)<0.01){still++;}else{still=0;}
+    last=v.currentTime;
+    if(t===3){
+      try{var cv=document.createElement('canvas');cv.width=32;cv.height=20;var cx=cv.getContext('2d');cx.drawImage(v,0,0,32,20);var d=cx.getImageData(0,0,32,20).data;var sum=0;for(var j=0;j<d.length;j+=4){sum+=d[j]+d[j+1]+d[j+2];}log(name+' 像素采样: 成功, 平均亮度='+(sum/(32*20*3)).toFixed(1));}
+      catch(e){log(name+' 像素采样: 失败 '+e.name+' '+e.message);}
+    }
+    if(t>=10){clearInterval(iv);log(name+' 结论: '+(v.currentTime>1?'★ 正常播放中':(still>=8?'★ 卡住没在播':'★ 状态不明')));}
+  },1000);
+}
+function tryPlay(tag,v){var p=v.play();if(p&&p.then){p.then(function(){log(tag+' play() 成功');}).catch(function(e){log(tag+' play() 被拒: '+e.name);});}}
+var A=document.getElementById('vA'),B=document.getElementById('vB');
+probe('A',A);probe('B',B);
+tryPlay('A',A);tryPlay('B',B);
+document.getElementById('go').addEventListener('click',function(){log('— 点按后重试 —');tryPlay('A',A);tryPlay('B',B);});
+document.addEventListener('WeixinJSBridgeReady',function(){log('WeixinJSBridgeReady 已触发');},false);
+</script>
+</body>
+</html>
