@@ -87,15 +87,18 @@
     transition:opacity .6s ease;
   }
   .orbit-ring.dim{opacity:.22;animation-duration:110s}
-  .orbit-tri{
-    position:absolute;width:12px;height:11px;
-    clip-path:polygon(50% 0,100% 100%,0 100%);
-    opacity:.85;will-change:transform;
-    animation:triBob 5.5s ease-in-out infinite alternate, triSpin 9s ease-in-out infinite alternate;
+  .orbit-paw{
+    position:absolute;opacity:.92;will-change:transform;
+    animation:pawBob 5.5s ease-in-out infinite alternate, pawSpin 9s ease-in-out infinite alternate;
   }
+  .orbit-paw svg{display:block;width:100%;height:100%}
   @keyframes orbitSpin{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
-  @keyframes triBob{from{margin-top:-5px}to{margin-top:6px}}
-  @keyframes triSpin{from{rotate:-24deg}to{rotate:32deg}}
+  @keyframes pawBob{from{margin-top:-5px}to{margin-top:6px}}
+  @keyframes pawSpin{from{rotate:-24deg}to{rotate:32deg}}
+  /* drifting ambient paws across the whole screen */
+  .spark-paw{position:absolute;opacity:0;will-change:transform,opacity}
+  .spark-paw svg{display:block;width:100%;height:100%}
+  @keyframes pawGlow{0%,100%{opacity:.05}50%{opacity:.30}}
 
   /* typewriter welcome line */
   .typewriter{
@@ -335,6 +338,79 @@
     font-size:1.3rem;line-height:1;
   }
 
+  /* ---------- entry gate: black opening, click the paw to enter ---------- */
+  .bg-stage{transition:opacity 1.1s ease}
+  .stage,.music-player{transition:opacity .7s ease}
+  body:not(.entered) .bg-stage{opacity:0}
+  body:not(.entered) .stage,body:not(.entered) .music-player{opacity:0;pointer-events:none}
+  .gate{
+    position:fixed;inset:0;z-index:200;background:#000;
+    display:flex;align-items:center;justify-content:center;
+    transition:opacity .65s ease;
+  }
+  .gate-crt{
+    position:absolute;inset:0;pointer-events:none;
+    box-shadow:inset 0 0 110px 26px rgba(0,0,0,.52), inset 0 0 26px rgba(0,0,0,.30);
+    background:
+      radial-gradient(118% 90% at 50% 42%, transparent 46%, rgba(0,0,0,.16) 76%, rgba(0,0,0,.46) 100%),
+      radial-gradient(88% 68% at 50% 50%, transparent 58%, rgba(0,0,0,.20) 100%),
+      repeating-linear-gradient(0deg, rgba(0,0,0,.13) 0 1px, transparent 1px 3px),
+      repeating-linear-gradient(90deg, rgba(255,255,255,.016) 0 1px, transparent 1px 4px);
+  }
+  .gate-drift{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+  .drift-paw{position:absolute;opacity:.13;will-change:transform;animation:sparkFloat 11s ease-in-out infinite alternate}
+  .drift-paw svg{display:block;width:100%;height:100%}
+  .gate-inner{
+    position:relative;display:flex;flex-direction:column;align-items:center;gap:22px;
+    padding:24px 16px;text-align:center;
+    transition:transform .6s ease,opacity .6s ease;
+  }
+  .gate.leaving{opacity:0;pointer-events:none}
+  .gate.leaving .gate-inner{transform:scale(1.1);opacity:0}
+  .gate-core{position:relative;width:148px;height:148px;display:flex;align-items:center;justify-content:center}
+  .gate-orbit{
+    position:absolute;left:50%;top:50%;width:300px;height:300px;
+    transform:translate(-50%,-50%);pointer-events:none;
+    animation:gateSpin 55s linear infinite;
+  }
+  @keyframes gateSpin{from{transform:translate(-50%,-50%) rotate(0deg)}to{transform:translate(-50%,-50%) rotate(360deg)}}
+  .gate-paw{position:absolute;transform:translate(-50%,-50%);opacity:.92}
+  .gate-paw svg{display:block;width:100%;height:100%}
+  .gate-ring{
+    position:absolute;inset:0;border-radius:50%;pointer-events:none;
+    border:1.5px solid rgba(206,255,28,.55);
+    box-shadow:0 0 24px rgba(206,255,28,.35), inset 0 0 18px rgba(206,255,28,.12);
+    animation:gatePulse 2.6s ease-in-out infinite;
+  }
+  @keyframes gatePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.045)}}
+  .gate-btn{
+    position:relative;z-index:2;appearance:none;border:0;background:none;cursor:pointer;
+    width:106px;height:106px;border-radius:50%;padding:0;
+    display:flex;align-items:center;justify-content:center;
+    transition:transform .18s ease;
+  }
+  .gate-btn:hover{transform:scale(1.07)}
+  .gate-btn:active{transform:scale(.95)}
+  .gate-btn:focus-visible{outline:2px solid var(--lime);outline-offset:4px}
+  .gate-btn svg{width:64px;height:64px;display:block;filter:drop-shadow(0 0 10px rgba(206,255,28,.65))}
+  .gate-hint{
+    margin:0;min-height:1.5em;
+    font-family:"Baloo 2","PingFang SC",sans-serif;font-weight:700;
+    font-size:clamp(1rem,2.6vw,1.2rem);color:var(--ink);
+    text-shadow:0 2px 12px rgba(0,0,0,.9);
+    transition:opacity .4s ease;
+  }
+  .gate-hint.fading{opacity:0}
+  .gate-arrow{color:var(--lime);line-height:0;animation:gateArrow 1.6s ease-in-out infinite}
+  .gate-arrow svg{width:22px;height:22px;fill:currentColor;display:block;filter:drop-shadow(0 0 6px rgba(206,255,28,.6))}
+  @keyframes gateArrow{0%,100%{transform:translateY(4px)}50%{transform:translateY(-4px)}}
+  @media (max-width:640px){
+    .gate-orbit{width:252px;height:252px}
+    .gate-core{width:132px;height:132px}
+    .gate-btn{width:96px;height:96px}
+    .gate-btn svg{width:58px;height:58px}
+  }
+
   /* ---------- floating music player ---------- */
   .music-player{
     position:fixed;z-index:30;
@@ -446,14 +522,34 @@
   }
   @media (prefers-reduced-motion: reduce){
     .meow-btn,.menu button,.title-zone,.hint{transition:none}
-    .orbit-ring,.orbit-tri,.spark,.type-caret{animation:none !important}
-    .spark{opacity:.25}
+    .orbit-ring,.orbit-paw,.spark-paw,.type-caret,.gate-orbit,.gate-ring,.gate-arrow,.drift-paw{animation:none !important}
+    .spark-paw{opacity:.16}
+    .gate,.gate-inner{transition:none}
     .mp-play::after{animation:none !important;box-shadow:0 0 0 3px rgba(206,255,28,.55), 0 0 16px rgba(206,255,28,.6)}
     .mp-play{transition:none}
   }
 </style>
 </head>
 <body>
+
+<!-- intro gate: black opening screen, click the paw icon to enter -->
+<div class="gate" id="gate" role="dialog" aria-modal="true" aria-label="Entrada 入口">
+  <div class="gate-crt" aria-hidden="true"></div>
+  <div class="gate-drift" id="gateDrift" aria-hidden="true"></div>
+  <div class="gate-inner">
+    <div class="gate-core">
+      <div class="gate-orbit" id="gateOrbit" aria-hidden="true"></div>
+      <div class="gate-ring" aria-hidden="true"></div>
+      <button class="gate-btn" id="gateBtn" type="button" aria-label="Entra a la casa de Lao Liu 进入老六的家">
+        <svg viewBox="0 0 64 64" aria-hidden="true"><g fill="#ceff1c"><ellipse cx="32" cy="42" rx="11" ry="9"/><ellipse cx="13" cy="30" rx="5" ry="7" transform="rotate(-20 13 30)"/><ellipse cx="23" cy="21" rx="5.5" ry="7.5" transform="rotate(-7 23 21)"/><ellipse cx="41" cy="21" rx="5.5" ry="7.5" transform="rotate(7 41 21)"/><ellipse cx="51" cy="30" rx="5" ry="7" transform="rotate(20 51 30)"/></g></svg>
+      </button>
+    </div>
+    <p class="gate-hint" id="gateHint">Fes clic a la icona</p>
+    <div class="gate-arrow" aria-hidden="true">
+      <svg viewBox="0 0 24 24"><path d="M12 5.5 3.8 13.7l1.8 1.8L12 9.1l6.4 6.4 1.8-1.8L12 5.5z"/></svg>
+    </div>
+  </div>
+</div>
 
 <!-- uwu-style ASCII video background (decorative layer) -->
 <div class="bg-stage" aria-hidden="true">
@@ -719,6 +815,115 @@
 
 <script>
 (function(){
+  // --- tiny click sound, synthesised live with WebAudio (no audio file).
+  // Browsers only allow sound after a user gesture, so the context is
+  // created lazily inside the first click; if audio is unavailable the
+  // helper stays silent and never blocks the interaction. ---
+  var actx = null;
+  window.pawClick = function(){
+    try {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return;
+      if (!actx) actx = new AC();
+      if (actx.state === 'suspended') actx.resume();
+      var t = actx.currentTime;
+      var osc = actx.createOscillator();
+      var gain = actx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(560, t);
+      osc.frequency.exponentialRampToValueAtTime(180, t + 0.085);
+      gain.gain.setValueAtTime(0.0001, t);
+      gain.gain.exponentialRampToValueAtTime(0.14, t + 0.012);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
+      osc.connect(gain);
+      gain.connect(actx.destination);
+      osc.start(t);
+      osc.stop(t + 0.13);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+
+  // --- intro gate: black opening screen; click the paw icon to enter ---
+  var gate = document.getElementById('gate');
+  var gateBtn = document.getElementById('gateBtn');
+  if (!gate || !gateBtn){
+    document.body.classList.add('entered');
+    return;
+  }
+  var PAW = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 13.2c2.9 0 5.6 2.3 5.6 4.6 0 1.5-1.1 2.4-2.7 2.4-1 0-1.8-.4-2.9-.4s-1.9.4-2.9.4c-1.6 0-2.7-.9-2.7-2.4 0-2.3 2.7-4.6 5.6-4.6Z"/><ellipse cx="5.4" cy="10.4" rx="1.9" ry="2.4" transform="rotate(-18 5.4 10.4)"/><ellipse cx="9.2" cy="7.4" rx="2" ry="2.6" transform="rotate(-6 9.2 7.4)"/><ellipse cx="14.8" cy="7.4" rx="2" ry="2.6" transform="rotate(6 14.8 7.4)"/><ellipse cx="18.6" cy="10.4" rx="1.9" ry="2.4" transform="rotate(18 18.6 10.4)"/></svg>';
+  var small = window.innerWidth < 768;
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var pawColors = ['#ffb3c8','#e3c8ff','#F0975F','#ceff1c','#8fd3ff','#EFB254','#b8f1cc'];
+
+  // colourful little paws slowly orbiting the centre icon
+  var orbit = document.getElementById('gateOrbit');
+  if (orbit){
+    var n = small ? 6 : 12;
+    for (var i = 0; i < n; i++){
+      var a = (i / n) * Math.PI * 2 + (Math.random() - .5) * .3;
+      var p = document.createElement('span');
+      p.className = 'gate-paw';
+      p.innerHTML = PAW;
+      var sz = 13 + Math.random() * 9;
+      p.style.width = sz + 'px';
+      p.style.height = sz + 'px';
+      p.style.left = (50 + 48 * Math.cos(a)) + '%';
+      p.style.top = (50 + 48 * Math.sin(a)) + '%';
+      p.style.color = pawColors[i % pawColors.length];
+      p.style.rotate = (Math.random() * 60 - 30) + 'deg';
+      orbit.appendChild(p);
+    }
+  }
+  // a few more paws drifting quietly across the black
+  var drift = document.getElementById('gateDrift');
+  if (drift){
+    var nd = small ? 3 : 6;
+    for (var j = 0; j < nd; j++){
+      var d = document.createElement('span');
+      d.className = 'drift-paw';
+      d.innerHTML = PAW;
+      var ds = 14 + Math.random() * 16;
+      d.style.width = ds + 'px';
+      d.style.height = ds + 'px';
+      d.style.left = (Math.random() * 92 + 3) + '%';
+      d.style.top = (Math.random() * 88 + 5) + '%';
+      d.style.color = pawColors[(j + 2) % pawColors.length];
+      d.style.animationDelay = (-Math.random() * 10) + 's';
+      d.style.animationDuration = (9 + Math.random() * 7) + 's';
+      drift.appendChild(d);
+    }
+  }
+  // rotating "click the icon" hint, Catalan first
+  var gateHints = ['Fes clic a la icona','点击图标进站','Click the icon to enter','Fes clic per veure-ho','点击查看','Haz clic en el icono','アイコンをタップしてね'];
+  var hintEl = document.getElementById('gateHint');
+  var hi = 0, hintTimer = null;
+  if (hintEl && !reduceMotion){
+    hintTimer = setInterval(function(){
+      hintEl.classList.add('fading');
+      setTimeout(function(){
+        hi = (hi + 1) % gateHints.length;
+        hintEl.textContent = gateHints[hi];
+        hintEl.classList.remove('fading');
+      }, 420);
+    }, 2400);
+  }
+
+  var entered = false;
+  function enter(){
+    if (entered) return;
+    entered = true;
+    if (window.pawClick) window.pawClick();
+    if (hintTimer) clearInterval(hintTimer);
+    gate.classList.add('leaving');
+    document.body.classList.add('entered');
+    window.dispatchEvent(new Event('laoliu-enter'));
+    setTimeout(function(){ gate.hidden = true; }, reduceMotion ? 80 : 720);
+  }
+  gateBtn.addEventListener('click', enter);
+  try { gateBtn.focus({ preventScroll:true }); } catch(e){ try { gateBtn.focus(); } catch(e2){} }
+})();
+</script>
+<script>
+(function(){
   // --- 老六 "speaks": cycle Catalan phrases ---
   var phrases = [
     {ca:"Mèu! Benvingut a casa meva.", cn:"喵！欢迎来到我家。"},
@@ -732,6 +937,7 @@
   var bCa = document.getElementById('bubbleCa');
   var bCn = document.getElementById('bubbleCn');
   btn.addEventListener('click', function(){
+    if (window.pawClick) window.pawClick();
     idx = (idx + 1) % phrases.length;
     bCa.textContent = phrases[idx].ca;
     bCn.textContent = phrases[idx].cn;
@@ -798,18 +1004,19 @@
   for (var i = 0; i < openers.length; i++){
     (function(b){
       b.addEventListener('click', function(){
+        if (window.pawClick) window.pawClick();
         if (currentPanel && currentPanel.id === b.getAttribute('data-open')) closePanels();
         else openPanel(b.getAttribute('data-open'), b);
       });
     })(openers[i]);
   }
   var titleZone = document.getElementById('titleOpen');
-  titleZone.addEventListener('click', function(){ openPanel('panel-presentacio', titleZone); });
+  titleZone.addEventListener('click', function(){ if (window.pawClick) window.pawClick(); openPanel('panel-presentacio', titleZone); });
   titleZone.addEventListener('keydown', function(e){
     if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openPanel('panel-presentacio', titleZone); }
   });
   var closers = document.querySelectorAll('[data-close]');
-  for (var j = 0; j < closers.length; j++) closers[j].addEventListener('click', closePanels);
+  for (var j = 0; j < closers.length; j++) closers[j].addEventListener('click', function(){ if (window.pawClick) window.pawClick(); closePanels(); });
   scrim.addEventListener('click', closePanels);
 
   // --- lightbox ---
@@ -988,51 +1195,54 @@
 </script>
 <script>
 (function(){
-  // --- uwu-style ambient FX: orbiting confetti triangles, drifting
-  // sparkles, and a typewriter welcome line. Pure decoration; counts are
+  // --- uwu-style ambient FX: orbiting little cat paws, drifting paws,
+  // and a typewriter welcome line. Pure decoration; counts are
   // halved on small screens to keep the frame rate smooth. ---
   var small = window.innerWidth < 768;
   var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-  // confetti ring around the centrepiece
+  var PAW_SVG = '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 13.2c2.9 0 5.6 2.3 5.6 4.6 0 1.5-1.1 2.4-2.7 2.4-1 0-1.8-.4-2.9-.4s-1.9.4-2.9.4c-1.6 0-2.7-.9-2.7-2.4 0-2.3 2.7-4.6 5.6-4.6Z"/><ellipse cx="5.4" cy="10.4" rx="1.9" ry="2.4" transform="rotate(-18 5.4 10.4)"/><ellipse cx="9.2" cy="7.4" rx="2" ry="2.6" transform="rotate(-6 9.2 7.4)"/><ellipse cx="14.8" cy="7.4" rx="2" ry="2.6" transform="rotate(6 14.8 7.4)"/><ellipse cx="18.6" cy="10.4" rx="1.9" ry="2.4" transform="rotate(18 18.6 10.4)"/></svg>';
+
+  // paw ring around the centrepiece
   var ring = document.getElementById('orbitRing');
   if (ring){
-    var colors = ['#F0975F','#EFB254','#ceff1c','#8fd3ff','#ffb3c8','#b8f1cc','#e3c8ff','#ffd9a0'];
-    var nTri = small ? 7 : 14;
-    for (var i = 0; i < nTri; i++){
-      var ang = (i / nTri) * Math.PI * 2 + (Math.random() - .5) * .22;
-      var tri = document.createElement('span');
-      tri.className = 'orbit-tri';
-      tri.style.left = (50 + 47 * Math.cos(ang)) + '%';
-      tri.style.top  = (50 + 45 * Math.sin(ang)) + '%';
-      var sz = 8 + Math.random() * 6;
-      tri.style.width = sz + 'px';
-      tri.style.height = (sz * .92) + 'px';
-      tri.style.background = colors[i % colors.length];
-      tri.style.animationDelay = (-Math.random() * 6) + 's,' + (-Math.random() * 9) + 's';
-      tri.style.animationDuration = (4.6 + Math.random() * 2.6) + 's,' + (7.5 + Math.random() * 4) + 's';
-      ring.appendChild(tri);
+    var colors = ['#ffb3c8','#e3c8ff','#F0975F','#ceff1c','#8fd3ff','#EFB254','#b8f1cc','#ffd9a0'];
+    var nPaw = small ? 7 : 14;
+    for (var i = 0; i < nPaw; i++){
+      var ang = (i / nPaw) * Math.PI * 2 + (Math.random() - .5) * .22;
+      var paw = document.createElement('span');
+      paw.className = 'orbit-paw';
+      paw.innerHTML = PAW_SVG;
+      paw.style.left = (50 + 47 * Math.cos(ang)) + '%';
+      paw.style.top  = (50 + 45 * Math.sin(ang)) + '%';
+      var sz = 13 + Math.random() * 8;
+      paw.style.width = sz + 'px';
+      paw.style.height = sz + 'px';
+      paw.style.color = colors[i % colors.length];
+      paw.style.animationDelay = (-Math.random() * 6) + 's,' + (-Math.random() * 9) + 's';
+      paw.style.animationDuration = (4.6 + Math.random() * 2.6) + 's,' + (7.5 + Math.random() * 4) + 's';
+      ring.appendChild(paw);
     }
   }
 
-  // sparse drifting sparkles (dots + little plus glints)
+  // sparse little paws drifting across the whole screen, kept subtle
   var fx = document.getElementById('fxParticles');
   if (fx){
-    var sparkColors = ['#ffffff','#eaffb0','#ffe9b8','#cfe8ff','#ffd9e8'];
-    var nSpark = small ? 9 : 18;
+    var sparkColors = ['#ffb3c8','#e3c8ff','#ffd9a0','#cfe8ff','#b8f1cc','#fff3f8'];
+    var nSpark = small ? 8 : 16;
     for (var j = 0; j < nSpark; j++){
       var sp = document.createElement('span');
-      var isPlus = j % 2 === 0;
-      sp.className = 'spark ' + (isPlus ? 'plus' : 'dot');
-      var s = isPlus ? (9 + Math.random() * 5) : (2.5 + Math.random() * 2.5);
+      sp.className = 'spark-paw';
+      sp.innerHTML = PAW_SVG;
+      var s = 10 + Math.random() * 12;
       sp.style.width = s + 'px';
       sp.style.height = s + 'px';
-      sp.style.left = (Math.random() * 96 + 2) + '%';
-      sp.style.top = (Math.random() * 92 + 4) + '%';
+      sp.style.left = (Math.random() * 94 + 2) + '%';
+      sp.style.top = (Math.random() * 90 + 4) + '%';
       sp.style.color = sparkColors[j % sparkColors.length];
-      if (!isPlus) sp.style.background = sparkColors[j % sparkColors.length];
-      var drift = 9 + Math.random() * 7;
-      sp.style.animation = 'sparkFloat ' + drift + 's ease-in-out ' + (-Math.random() * drift) + 's infinite alternate, sparkGlow ' + (drift * .8) + 's ease-in-out ' + (-Math.random() * 6) + 's infinite';
+      sp.style.rotate = (Math.random() * 50 - 25) + 'deg';
+      var drift = 10 + Math.random() * 8;
+      sp.style.animation = 'sparkFloat ' + drift + 's ease-in-out ' + (-Math.random() * drift) + 's infinite alternate, pawGlow ' + (drift * .8) + 's ease-in-out ' + (-Math.random() * 6) + 's infinite';
       fx.appendChild(sp);
     }
   }
@@ -1043,22 +1253,30 @@
   var caret = document.getElementById('typeCaret');
   var TEXT = 'Benvinguts a casa de Lao Liu';
   if (typeEl){
-    if (reduceMotion){
-      typeEl.textContent = TEXT;
-      if (caret) caret.classList.add('done');
-    } else {
-      var ti = 0;
-      setTimeout(function(){
-        var timer = setInterval(function(){
-          ti++;
-          typeEl.textContent = TEXT.slice(0, ti);
-          if (ti >= TEXT.length){
-            clearInterval(timer);
-            setTimeout(function(){ if (caret) caret.classList.add('done'); }, 2600);
-          }
-        }, 68);
-      }, 420);
-    }
+    var startType = function(){
+      if (reduceMotion){
+        typeEl.textContent = TEXT;
+        if (caret) caret.classList.add('done');
+      } else {
+        var ti = 0;
+        setTimeout(function(){
+          var timer = setInterval(function(){
+            ti++;
+            typeEl.textContent = TEXT.slice(0, ti);
+            if (ti >= TEXT.length){
+              clearInterval(timer);
+              setTimeout(function(){ if (caret) caret.classList.add('done'); }, 2600);
+            }
+          }, 68);
+        }, 420);
+      }
+    };
+    // typing starts only once the visitor has come through the gate
+    if (document.body.classList.contains('entered')) startType();
+    else window.addEventListener('laoliu-enter', function onEnter(){
+      window.removeEventListener('laoliu-enter', onEnter);
+      startType();
+    });
   }
 
   // when a panel opens: confetti ring goes quiet, typewriter hides
