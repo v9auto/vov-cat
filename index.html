@@ -44,7 +44,7 @@
 
   /* ---------- uwu-style ASCII video background ---------- */
   .bg-stage{position:fixed;inset:0;z-index:0;background:#000;overflow:hidden}
-  .bg-video{position:absolute;left:0;top:0;width:4px;height:4px;opacity:0;pointer-events:none}
+  .bg-video{position:absolute;left:0;bottom:0;width:8px;height:5px;opacity:.02;pointer-events:none}
   .bg-canvas{display:block;width:100%;height:100%}
   .bg-shade{position:absolute;inset:0;background:rgba(4,6,0,.10);pointer-events:none}
   .bg-crt{
@@ -117,7 +117,7 @@
   /* ---------- single-screen stage ---------- */
   .stage{
     position:relative;z-index:2;
-    height:100dvh;
+    height:100dvh;overflow:hidden;
     display:flex;flex-direction:column;align-items:center;
     padding:calc(14px + env(safe-area-inset-top)) 16px calc(10px + env(safe-area-inset-bottom));
     text-align:center;
@@ -462,6 +462,7 @@
     <source src="https://vov.cat/bg.mp4" type="video/mp4" />
   </video>
   <canvas class="bg-canvas" id="bgCanvas"></canvas>
+  <canvas class="bg-canvas" id="bgCanvas2d" hidden></canvas>
   <div class="bg-shade"></div>
   <div class="bg-crt"></div>
 </div>
@@ -1083,8 +1084,17 @@
   // brightness from the charset. Rendered with a WebGL shader (font-atlas
   // texture) for speed; a Canvas 2D colour renderer is the fallback.
   var canvas = document.getElementById('bgCanvas');
+  var canvas2 = document.getElementById('bgCanvas2d');
   var video  = document.getElementById('bgVideo');
   if (!canvas || !video) return;
+  // iOS WebKit (Safari, CriOS — every iPhone/iPad browser) cannot feed
+  // video frames into the WebGL path on this page: the texture upload
+  // stalls/throws and the background freezes on the poster frame, while
+  // Canvas 2D sampling of the same video works (verified on-device).
+  // So iOS goes straight to the Canvas 2D path and never tries WebGL.
+  var uaStr = navigator.userAgent || '';
+  var force2D = /iP(hone|ad|od)/.test(uaStr) ||
+    (navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1);
   var CHARS = " ......::;+*x#%@";
   var NCH = CHARS.length;
   var MAXI = NCH - 1;
@@ -1133,10 +1143,12 @@
   /* ================= WebGL renderer ================= */
   var gl = null, prog = null, srcTex = null, atlasTex = null, srcKind = '';
   var U = {};
-  try {
-    gl = canvas.getContext('webgl', { antialias:false, alpha:false, depth:false, stencil:false })
-      || canvas.getContext('experimental-webgl', { antialias:false, alpha:false });
-  } catch(e){ gl = null; }
+  if (!force2D){
+    try {
+      gl = canvas.getContext('webgl', { antialias:false, alpha:false, depth:false, stencil:false })
+        || canvas.getContext('experimental-webgl', { antialias:false, alpha:false });
+    } catch(e){ gl = null; }
+  }
 
   if (gl){
     var VS = [
@@ -1279,51 +1291,94 @@
     gl.viewport(0, 0, canvas.width, canvas.height);
   }
 
+  // Runtime self-check of the WebGL video path: the first few times a
+  // video frame is drawn, read pixels back. If the texture upload throws,
+  // or every checked frame reads back pure black, the WebGL path is
+  // broken on this browser and rendering switches to Canvas 2D for good.
+  // Any exception while sampling/drawing lands in the same switch — the
+  // render loop itself must never die or freeze on one frame.
+  var glVideoChecked = 0, glVideoVerified = false;
   function drawGL(now){
-    var useVideo = !videoFailed && video.readyState >= 2;
-    var aspect;
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, srcTex);
-    if (useVideo){
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
-      aspect = video.videoWidth / video.videoHeight;
-      srcKind = 'video';
-    } else if (posterReady){
-      if (srcKind !== 'poster'){
-        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, posterImg);
-        srcKind = 'poster';
+    try {
+      var useVideo = !videoFailed && video.readyState >= 2;
+      var aspect;
+      gl.activeTexture(gl.TEXTURE0);
+      gl.bindTexture(gl.TEXTURE_2D, srcTex);
+      if (useVideo){
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+        aspect = video.videoWidth / video.videoHeight;
+        srcKind = 'video';
+      } else if (posterReady){
+        if (srcKind !== 'poster'){
+          gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, posterImg);
+          srcKind = 'poster';
+        }
+        aspect = posterImg.naturalWidth / posterImg.naturalHeight;
+      } else return;
+      gl.uniform2f(U.grid, cols, rows);
+      gl.uniform2f(U.res, W, H);
+      gl.uniform1f(U.srcAspect, aspect);
+      gl.uniform1f(U.canvasAspect, W / H);
+      gl.uniform1f(U.time, now / 1000);
+      if (U.pointer) gl.uniform3f(U.pointer, ptrSX, ptrSY, reduceMotion ? 0 : ptrStrength);
+      var rp = new Float32Array(16);
+      for (var i = 0; i < 4; i++){
+        var r = ripples[i];
+        rp[i*4]   = r ? r.x : 0;
+        rp[i*4+1] = r ? r.y : 0;
+        rp[i*4+2] = r ? r.t : -1000;
+        rp[i*4+3] = 0;
       }
-      aspect = posterImg.naturalWidth / posterImg.naturalHeight;
-    } else return;
-    gl.uniform2f(U.grid, cols, rows);
-    gl.uniform2f(U.res, W, H);
-    gl.uniform1f(U.srcAspect, aspect);
-    gl.uniform1f(U.canvasAspect, W / H);
-    gl.uniform1f(U.time, now / 1000);
-    if (U.pointer) gl.uniform3f(U.pointer, ptrSX, ptrSY, reduceMotion ? 0 : ptrStrength);
-    var rp = new Float32Array(16);
-    for (var i = 0; i < 4; i++){
-      var r = ripples[i];
-      rp[i*4]   = r ? r.x : 0;
-      rp[i*4+1] = r ? r.y : 0;
-      rp[i*4+2] = r ? r.t : -1000;
-      rp[i*4+3] = 0;
+      gl.uniform4fv(U.ripples, rp);
+      gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      if (useVideo && !glVideoVerified){
+        glVideoChecked++;
+        var pw = Math.min(48, canvas.width), ph = Math.min(48, canvas.height);
+        if (pw > 0 && ph > 0){
+          var px = new Uint8Array(pw * ph * 4);
+          gl.readPixels(Math.max(0, (canvas.width - pw) >> 1), Math.max(0, (canvas.height - ph) >> 1), pw, ph, gl.RGBA, gl.UNSIGNED_BYTE, px);
+          var any = false;
+          for (var pi = 0; pi < px.length; pi += 4){
+            if (px[pi] > 4 || px[pi+1] > 4 || px[pi+2] > 4){ any = true; break; }
+          }
+          if (any) glVideoVerified = true;
+          else if (glVideoChecked >= 5) activate2D();
+        }
+      }
+    } catch(e){
+      activate2D();
     }
-    gl.uniform4fv(U.ripples, rp);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
   }
 
-  /* ================= Canvas 2D fallback (full colour) ================= */
+  /* ================= Canvas 2D renderer (full colour) =================
+     Lives on its own canvas: a canvas that already holds a WebGL context
+     can never hand out a 2D one, so the two renderers need two elements.
+     This path is primary on iOS and the permanent fallback everywhere
+     else (WebGL missing, self-check failed, or a sampling exception). */
   var ctx2 = null, sample = null, sctx = null;
-  if (!glMode){
-    ctx2 = canvas.getContext('2d');
+  function init2D(){
+    if (ctx2) return true;
+    if (!canvas2) return false;
+    ctx2 = canvas2.getContext('2d');
+    if (!ctx2) return false;
     sample = document.createElement('canvas');
     sctx = sample.getContext('2d', { willReadFrequently:true });
+    return true;
   }
+  function activate2D(){
+    if (!glMode && ctx2) return;
+    if (!init2D()) return;
+    glMode = false;
+    if (canvas) canvas.hidden = true;
+    if (canvas2) canvas2.hidden = false;
+    resize();
+  }
+  if (!glMode) activate2D();
   function c2Resize(){
+    if (!ctx2) return;
     var dpr = Math.min(window.devicePixelRatio || 1, 1.25);
-    canvas.width  = Math.round(W * dpr);
-    canvas.height = Math.round(H * dpr);
+    canvas2.width  = Math.round(W * dpr);
+    canvas2.height = Math.round(H * dpr);
     ctx2.setTransform(dpr, 0, 0, dpr, 0, 0);
     sample.width = cols; sample.height = rows;
   }
@@ -1486,10 +1541,24 @@
 
   // Only the LAST <source> failing means the video is truly unavailable:
   // the browser falls through the source list in order on load errors.
+  // A stream whose clock is still advancing is never "failed": an error
+  // event from a fallback <source> must not demote a video that is
+  // playing fine to the static poster. Failure is declared only if the
+  // clock is still frozen ~0.7s after the error arrived.
+  function declareFailedIfStalled(){
+    if (videoFailed) return;
+    var t0 = video.currentTime || 0;
+    setTimeout(function(){
+      if (videoFailed) return;
+      if ((video.currentTime || 0) > t0 + 0.03) return; // still advancing
+      videoFailed = true;
+      drawStatic();
+    }, 700);
+  }
   var srcEls = video.querySelectorAll('source');
   var lastSrc = srcEls.length ? srcEls[srcEls.length - 1] : null;
-  if (lastSrc) lastSrc.addEventListener('error', function(){ videoFailed = true; drawStatic(); });
-  video.addEventListener('error', function(){ videoFailed = true; drawStatic(); });
+  if (lastSrc) lastSrc.addEventListener('error', declareFailedIfStalled);
+  video.addEventListener('error', declareFailedIfStalled);
 
   video.muted = true;
   // Autoplay assurance (mainly iOS Safari): if play() gets rejected, or the
