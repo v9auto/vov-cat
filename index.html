@@ -618,10 +618,17 @@
   .meow-paw.pop{animation:bubblePop .4s cubic-bezier(.2,1.8,.4,1) forwards}
   /* the machine-translated sentence, held still so the joke lands */
   .trans-scramble.hold{letter-spacing:.05em;color:#fff}
-  /* letter-by-letter wave across the big title */
-  .trans-titlewrap .tchar{display:inline-block}
-  .trans-titlewrap.waving .tchar{animation:tcharWave .55s ease}
-  @keyframes tcharWave{0%,100%{transform:translateY(0)}40%{transform:translateY(-.22em)}}
+  /* letter-by-letter glitch smear across the big title: each letter
+     stretches HORIZONTALLY (scaleX + a touch of skew) as the wave
+     passes — a smeared, dragged look, never a vertical bob */
+  .trans-titlewrap .tchar{display:inline-block;transform-origin:50% 62%}
+  .trans-titlewrap.waving .tchar{animation:tcharWave .45s ease}
+  @keyframes tcharWave{
+    0%,100%{transform:scaleX(1) skewX(0deg)}
+    28%{transform:scaleX(1.65) skewX(-9deg)}
+    52%{transform:scaleX(.72) skewX(6deg)}
+    74%{transform:scaleX(1.18) skewX(-3deg)}
+  }
   /* the gate paw, selected, walking home step by step */
   .trans-walk{
     position:fixed;left:0;top:0;z-index:211;pointer-events:none;
@@ -684,6 +691,49 @@
   .white-flash{position:absolute;inset:0;z-index:60;background:#fff8ec;opacity:0;pointer-events:none}
   .white-flash.on{animation:whiteFlash 1.15s ease forwards}
   @keyframes whiteFlash{0%{opacity:0}18%{opacity:.5}100%{opacity:0}}
+  /* one-frame full-screen GRAY flash; from that beat on, the page
+     base lifts from pure black to dark gray and stays lifted */
+  .gray-flash{position:absolute;inset:0;z-index:56;background:#8d8d8d;opacity:0;pointer-events:none}
+  .gray-flash.on{animation:grayFlash .34s ease forwards}
+  @keyframes grayFlash{0%{opacity:0}18%,55%{opacity:.88}100%{opacity:0}}
+  .gate.lifted:not(.clear){background:#1b1b1b}
+  body.bg-lifted{background:#181818}
+  /* finale: dot particles burst from the centre into a cloud on a
+     light-gray wash, then condense away as the background lands */
+  #burstCanvas{position:absolute;inset:0;z-index:57;pointer-events:none}
+  /* the walking paw's blue "image element" badge + orange pulse */
+  .walk-badge{
+    position:absolute;right:-8px;top:-8px;z-index:2;
+    width:17px;height:17px;border-radius:4.5px;background:#2f7bff;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 2px 7px rgba(0,0,0,.45);
+  }
+  .walk-badge svg{width:11px;height:11px;display:block}
+  .trans-walk .pulse.orange{border-color:rgba(240,151,95,.92)}
+  /* "+" stars flashing once at the lockup's corners on arrival */
+  .lock-plus{
+    position:fixed;z-index:212;pointer-events:none;line-height:1;font-weight:800;
+    font-family:"Baloo 2",sans-serif;opacity:0;
+    text-shadow:0 0 9px rgba(206,255,28,.85);
+  }
+  .lock-plus.go{animation:lockPlus .65s ease-out forwards}
+  @keyframes lockPlus{
+    0%{opacity:0;transform:translate(-50%,-50%) scale(.3) rotate(0deg)}
+    35%{opacity:1}
+    100%{opacity:0;transform:translate(-50%,-50%) scale(1.3) rotate(90deg)}
+  }
+  /* hairline band: extra lines joining the placed lead line, plus
+     the lead line's selection handles while it is "selected" */
+  .hair-extra{
+    position:absolute;left:0;right:0;height:1px;
+    background:rgba(246,232,216,.45);opacity:0;transition:opacity .4s ease;
+  }
+  .hair-handle{
+    position:absolute;top:-3.5px;width:7px;height:7px;border-radius:1px;
+    background:#fff;border:1.5px solid #2f7bff;transition:opacity .3s ease;
+  }
+  .hair-handle.l{left:8px}
+  .hair-handle.r{right:8px}
   /* the settled page rises in gently at the very end */
   body.entered .stage .menu,body.entered .foot{animation:riseIn .85s cubic-bezier(.2,.9,.3,1) both}
   body.entered .music-player{animation:riseIn .85s cubic-bezier(.2,.9,.3,1) .18s both}
@@ -856,6 +906,8 @@
   <div class="page-hairline" id="pageHairline" hidden><span class="big-tag">0 x 1</span></div>
   <div class="ruler-h" id="rulerH" hidden><span class="ruler-tag">y 0</span></div>
   <div class="ruler-v" id="rulerV" hidden><span class="ruler-tag">x 0</span></div>
+  <div class="gray-flash" id="grayFlash"></div>
+  <canvas id="burstCanvas" aria-hidden="true"></canvas>
   <div class="white-flash" id="whiteFlash"></div>
 </div>
 
@@ -1317,6 +1369,170 @@
     if (!ctx) return;
     try { blip(ctx, 'sine', 480, 960, 0.9, 0.028, 0); } catch(e){ /* no audio: stay silent */ }
   };
+
+  // --- REAL cat meows: five short recordings (meow-0..4.mp3),
+  // preloaded while the gate is on screen so every cue in the show
+  // fires instantly. meow-0 is the full, descending one; 1/2 and 3/4
+  // are two different cats. Playback clones the preloaded element so
+  // overlapping meows never cut each other off.
+  // PATH: the files live at the SITE ROOT, next to bg.mp4 — the
+  // deployed page must request 'meow-N.mp3', exactly like bg.mp4.
+  // (The Space preview keeps its copies under assets/; the one-time
+  // error fallback below finds those there. Root stays primary.) ---
+  var meowPool = [];
+  for (var mi = 0; mi < 5; mi++){
+    (function(n){
+      try {
+        var ma = new Audio();
+        ma.preload = 'auto';
+        ma.addEventListener('error', function h(){
+          ma.removeEventListener('error', h);
+          ma.src = 'assets/meow-' + n + '.mp3';
+        });
+        ma.src = 'meow-' + n + '.mp3';
+        meowPool.push(ma);
+      } catch(e){ meowPool.push(null); }
+    })(mi);
+  }
+  window.pawRealMeow = function(i){
+    var base = meowPool[i];
+    if (!base) return;
+    try {
+      var a = base.cloneNode();
+      a.volume = 1;
+      var p = a.play();
+      if (p && p.catch) p.catch(function(){});
+    } catch(e){ /* no audio: stay silent */ }
+  };
+
+  // --- Arpeggio bed: a warm little triangle-wave motif looping very
+  // quietly under the two "busy" stages (slogan assembly, card
+  // theatre), fading in and out at the stage edges. The scramble
+  // stage gets NO bed — near-silence is its drama. ---
+  var bedGain = null, bedTimer = null, bedStep = 0;
+  var BED_NOTES = [523.25, 587.33, 659.25, 783.99, 880.00, 783.99, 659.25, 587.33, 440.00, 493.88, 587.33, 659.25];
+  function bedNote(freq, peak, type){
+    var ctx = ensureCtx();
+    if (!ctx || !bedGain) return;
+    try {
+      var t = ctx.currentTime;
+      var osc = ctx.createOscillator();
+      osc.type = type || 'triangle';
+      osc.frequency.value = freq;
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(peak, t + 0.035);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 0.6);
+      osc.connect(g); g.connect(bedGain);
+      osc.start(t); osc.stop(t + 0.65);
+    } catch(e){ /* no audio: stay silent */ }
+  }
+  window.bedStart = function(){
+    var ctx = ensureCtx();
+    if (!ctx || bedTimer) return;
+    if (!bedGain){ bedGain = ctx.createGain(); bedGain.gain.value = 0; bedGain.connect(ctx.destination); }
+    bedGain.gain.cancelScheduledValues(ctx.currentTime);
+    bedGain.gain.setTargetAtTime(1, ctx.currentTime, 0.45);
+    bedStep = 0;
+    var bedTick = function(){
+      var f = BED_NOTES[bedStep % BED_NOTES.length];
+      bedNote(f, 0.06);
+      if (bedStep % 2 === 0) bedNote(f / 2, 0.022, 'sine');
+      bedStep++;
+    };
+    bedTick();
+    bedTimer = setInterval(bedTick, 290);
+  };
+  window.bedStop = function(){
+    if (bedTimer){ clearInterval(bedTimer); bedTimer = null; }
+    if (bedGain && actx){
+      try { bedGain.gain.setTargetAtTime(0, actx.currentTime, 0.3); } catch(e){}
+    }
+  };
+
+  // Sentence-lock accent — deliberately the loudest event of the
+  // first half: a low thump, a bright click on top, and a short
+  // three-note arpeggio climbing away (layered peak ≈ 0.4).
+  window.pawLockBig = function(){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      blip(ctx, 'sine', 150, 52, 0.3, 0.34, 0);
+      blip(ctx, 'square', 1400, 380, 0.05, 0.11, 0);
+      blip(ctx, 'triangle', 2600, 1200, 0.03, 0.09, 0);
+      var arp = [523.25, 659.25, 783.99];
+      for (var ai = 0; ai < arp.length; ai++)
+        blip(ctx, 'triangle', arp[ai], arp[ai] * 0.995, 0.24, 0.1, 0.06 + ai * 0.075);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+  // Card-complete sting: a soft three-note chord with a low root —
+  // the "finished" sound of the card theatre.
+  window.pawSting = function(){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      var chord = [659.25, 783.99, 1046.50];
+      for (var ci = 0; ci < chord.length; ci++){
+        blip(ctx, 'sine', chord[ci], chord[ci] * 0.996, 0.75, 0.11, ci * 0.02);
+        blip(ctx, 'triangle', chord[ci] * 2, chord[ci] * 1.99, 0.4, 0.028, ci * 0.02);
+      }
+      blip(ctx, 'sine', 175, 68, 0.32, 0.15, 0);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+  // White-flash finale — the loudest moment of the whole show: a
+  // full-band noise swell bursting open, a fat pop on top, and then
+  // every sound in the page stops for good.
+  window.pawFinale = function(){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      var t = ctx.currentTime;
+      var src = ctx.createBufferSource();
+      src.buffer = getNoise(ctx);
+      src.loop = true;
+      var lp = ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(280, t);
+      lp.frequency.exponentialRampToValueAtTime(17000, t + 0.5);
+      lp.frequency.exponentialRampToValueAtTime(380, t + 1.15);
+      var g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, t);
+      g.gain.exponentialRampToValueAtTime(0.42, t + 0.45);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + 1.2);
+      src.connect(lp); lp.connect(g); g.connect(ctx.destination);
+      src.start(t); src.stop(t + 1.25);
+      blip(ctx, 'sine', 520, 165, 0.18, 0.36, 0.04);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+  // Wooden "tok" — a short square knock over a low thock.
+  window.pawTok = function(high){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      blip(ctx, 'square', high ? 430 : 300, 140, 0.045, 0.09, 0);
+      blip(ctx, 'sine', high ? 305 : 215, 95, 0.09, 0.2, 0);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+  // Metallic micro-"ding": a high sine with its harmonic, long tail.
+  window.pawDing = function(){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      blip(ctx, 'sine', 2093, 2082, 0.55, 0.085, 0);
+      blip(ctx, 'sine', 3136, 3122, 0.32, 0.032, 0);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+  // Paper scratch: a brief high band-passed noise flick.
+  window.pawPaper = function(){ noiseSweep(2400, 5400, 0.15, 0.11, 0); };
+  // The four slogan words each land with a DIFFERENT voice — soft
+  // pop, wooden tok, tick-over-paper, micro ding — never one tick
+  // four times.
+  window.pawWord = function(k){
+    if (k === 0){ window.pawPopPitch(0.19, 1.05); }
+    else if (k === 1){ window.pawTok(false); }
+    else if (k === 2){ window.pawTick(); window.pawPaper(); }
+    else { window.pawDing(); }
+  };
   // Prime the context on the visitor's very first pointer press anywhere,
   // so every later programmatic sound (ticks, button pops) starts from an
   // already-running context.
@@ -1401,9 +1617,11 @@
   // word by word (selection frame, live sizes, ticks) → sentence locks
   // → machine-translation scramble «这里说了算这只猫» → cat-language
   // interlude «Mèu ×4» → big title with letter wave + «Mèu~» bubble →
-  // paw selected, walks home leaving footprints → whole viewport
-  // "selected" for a beat → card theatre (hairline, rulers, wireframe,
-  // five pieces land) → © + chime → white flash → ASCII background,
+  // paw selected, roams home along an arc leaving footprints → one
+  // full-screen gray flash, page base lifts to dark gray → card
+  // theatre (line band, rulers tracing the card, wireframe, five
+  // pieces land with garbled draft text) → © + chime → particle
+  // burst + white flash, card text finalises → ASCII background,
   // menu row and music player rise in last, 老六 greets once.
   var transStage = document.getElementById('transStage');
   var slogan = document.getElementById('transSlogan');
@@ -1448,9 +1666,11 @@
     meowPaws[mpi].innerHTML = PAW;
     meowPaws[mpi].style.color = pawColors[mpi % pawColors.length];
   }
-  // the walking paw carries its own pulse ring
+  // the walking paw carries its own pulse ring (lime), a second
+  // ORANGE pulse ring for the mid-journey bloom, and the blue
+  // design-tool "image element" badge riding on its corner
   var walkInit = document.getElementById('transWalk');
-  if (walkInit) walkInit.innerHTML = '<span class="pulse"></span>' + PAW;
+  if (walkInit) walkInit.innerHTML = '<span class="pulse"></span><span class="pulse orange"></span>' + PAW + '<span class="walk-badge"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="8.6" cy="8.6" r="2.1" fill="#fff"/><path d="M3.5 19.5 9.8 11.4a1.5 1.5 0 0 1 2.3 0l2.2 2.8 2-2.4a1.5 1.5 0 0 1 2.3 0l1.9 2.4v3.3a1 1 0 0 1-1 1h-15a1 1 0 0 1-1-1v-2z" fill="#fff"/></svg></span>';
 
   var entered = false;
   var transitioning = false;
@@ -1567,17 +1787,18 @@
   function stopScramble(){
     if (scrambleInt){ clearInterval(scrambleInt); scrambleInt = 0; }
   }
-  // Stage A (8–12s): the locked slogan dissolves into a character
-  // shuffle with blips, resolves into the deliberately wrong
+  // Stage A: the locked slogan dissolves into a character
+  // shuffle with sparse blips, resolves into the deliberately wrong
   // word-by-word machine translation «这里说了算这只猫», holds it
-  // still for ~1.2s so the joke lands, then shuffles away again.
+  // still for a full 2s so the joke can actually be read, then
+  // shuffles away again. Near-silence otherwise — no bed here.
   function startScramble(){
     if (!scrambleEl) return;
     slogan.style.visibility = 'hidden';
     hideSel();
     scrambleEl.hidden = false;
     scrambleEl.classList.remove('out');
-    var t0 = Date.now(), DUR = 3400, held = false;
+    var t0 = Date.now(), DUR = 4400, held = false;
     scrambleInt = setInterval(function(){
       var el = Date.now() - t0;
       if (el >= DUR){
@@ -1587,14 +1808,14 @@
         return;
       }
       var reveal;
-      if (el < 1100){
-        reveal = Math.floor((el / 1100) * CNLINE.length);
-      } else if (el < 2300){
+      if (el < 1300){
+        reveal = Math.floor((el / 1300) * CNLINE.length);
+      } else if (el < 3300){
         reveal = CNLINE.length;
         if (!held){ held = true; scrambleEl.classList.add('hold'); }
       } else {
         scrambleEl.classList.remove('hold');
-        reveal = Math.max(0, CNLINE.length - Math.floor(((el - 2300) / 1100) * CNLINE.length));
+        reveal = Math.max(0, CNLINE.length - Math.floor(((el - 3300) / 1100) * CNLINE.length));
       }
       var out = '';
       for (var i = 0; i < CNLINE.length; i++){
@@ -1602,18 +1823,25 @@
         else out += GLYPH[Math.floor(Math.random() * GLYPH.length)];
       }
       scrambleEl.textContent = out;
-      if (reveal < CNLINE.length && Math.random() < 0.7 && window.pawBlip) window.pawBlip();
+      if (reveal < CNLINE.length && Math.random() < 0.3 && window.pawBlip) window.pawBlip();
     }, 70);
   }
   // Stage C landing: an element pops in, the selection frame hugs it
-  // briefly with live dimensions, and a soft alternating pop plays.
-  function landEl(name, mult){
+  // briefly with live dimensions, and each piece lands with its OWN
+  // timbre — head a wooden tok, title a soft pop, slogan a paper
+  // scratch, links a metallic ding, the © line a higher tok.
+  function landEl(name){
     var el = document.querySelector('[data-asm="' + name + '"]');
     if (!el) return;
     el.classList.add('landed');
     followSel(el, 560);
     later(function(){ hideSel(); }, 600);
-    if (window.pawPopPitch) window.pawPopPitch(0.16, mult);
+    if (name === 'head'){ if (window.pawTok) window.pawTok(false); }
+    else if (name === 'title'){ if (window.pawPopPitch) window.pawPopPitch(0.2, 0.9); }
+    else if (name === 'slogan'){ if (window.pawPaper) window.pawPaper(); }
+    else if (name === 'links'){ if (window.pawDing) window.pawDing(); }
+    else if (name === 'copy'){ if (window.pawTok) window.pawTok(true); }
+    else if (window.pawPopPitch) window.pawPopPitch(0.16, 1.0);
   }
 
   // --- 30-second edition: extra stage helpers ---
@@ -1624,9 +1852,10 @@
   var rulerH = document.getElementById('rulerH');
   var rulerV = document.getElementById('rulerV');
 
-  // Cat-language interlude (12–14s): the sentence becomes four «Mèu»,
-  // one per original word; a little paw pops above each and a soft
-  // meow note sounds, pitched a touch higher every time.
+  // Cat-language interlude: the sentence becomes four «Mèu», one
+  // per original word; a little paw pops above each and a REAL cat
+  // answers — meow-1, meow-2, meow-3, meow-4 in turn, two cats
+  // alternating, never the old synthesised note.
   function startMeows(){
     if (!meowEl) return;
     if (scrambleEl) scrambleEl.hidden = true;
@@ -1638,13 +1867,14 @@
           w.classList.add('in');
           var p = w.querySelector('.meow-paw');
           if (p) p.classList.add('pop');
-          if (window.pawMeowNote) window.pawMeowNote(0.92 + k * 0.07);
-        }, k * 430);
+          if (window.pawRealMeow) window.pawRealMeow(k + 1);
+        }, k * 520);
       })(ws[i], i);
     }
   }
 
-  // A wave ripples through the big title, letter by letter.
+  // A glitch smear sweeps through the big title, letter by letter:
+  // each letter stretches horizontally (scaleX) as the wave passes.
   function waveTitle(){
     if (!titleWrap) return;
     var chars = titleWrap.querySelectorAll('.tchar');
@@ -1683,11 +1913,15 @@
     prints = [];
   }
 
-  // The walk home (17–22s): the gate paw is "selected" — live size tag
-  // hugging it, a pulse ring blooming behind — then it walks cat-style
-  // toward the card head's paw icon, alternating tilt step by step,
-  // a soft tap and a fading footprint at every step. On arrival it
-  // rests at the head spot until the full-screen selection flash.
+  // The roam home: the gate paw is "selected" — live size tag
+  // hugging it, a pulse ring blooming behind, the blue "image
+  // element" badge on its corner — then it ROAMS toward the card
+  // head along an ARC, not a straight line: the path dives down
+  // first and curves back up, an orange pulse ring blooms midway,
+  // the tilt alternates step by step, a soft tap and a fading
+  // footprint at every step. On arrival it locks in beside the
+  // site name and four little "+" stars flash at the corners of
+  // the lockup; then it rests there until the gray flash.
   function startWalk(){
     if (!walkPaw) return;
     var headIcon = document.querySelector('.card-head svg');
@@ -1710,29 +1944,47 @@
     later(hideSel, 1150);
     var pulse = walkPaw.querySelector('.pulse');
     if (pulse) pulse.classList.add('go');
-    var STEPS = 6, STEP_MS = 560;
+    // the roam path: a quadratic arc whose control point dips
+    // BELOW both ends, so the paw dives and curves like a cat
+    // wandering over, trailing its footprints along the arc
+    var cxp = (sx + ex) / 2 + (ex >= sx ? 34 : -34);
+    var cyp = Math.max(sy, ey) + 120;
+    function arcPt(t){
+      var u = 1 - t;
+      return {
+        x: u * u * sx + 2 * u * t * cxp + t * t * ex,
+        y: u * u * sy + 2 * u * t * cyp + t * t * ey
+      };
+    }
+    var STEPS = 6, STEP_MS = 620;
     var px = sx, py = sy;
     for (var i = 1; i <= STEPS; i++){
       (function(k){
         later(function(){
           var t = k / STEPS;
-          var nx = sx + (ex - sx) * t;
-          var ny = sy + (ey - sy) * t;
+          var np = arcPt(t);
+          var mp = arcPt(t - 0.5 / STEPS);
+          var nx = np.x, ny = np.y;
           var rot = (k % 2 ? -11 : 11);
           try {
             walkPaw.animate([
               { transform:'translate(' + (px - SIZE / 2) + 'px,' + (py - SIZE / 2) + 'px) rotate(' + (k % 2 ? 8 : -8) + 'deg)' },
-              { transform:'translate(' + ((px + nx) / 2 - SIZE / 2) + 'px,' + (Math.min(py, ny) - 16 - SIZE / 2) + 'px) rotate(0deg)', offset:.5 },
+              { transform:'translate(' + (mp.x - SIZE / 2) + 'px,' + (mp.y - 14 - SIZE / 2) + 'px) rotate(0deg)', offset:.5 },
               { transform:'translate(' + (nx - SIZE / 2) + 'px,' + (ny - SIZE / 2) + 'px) rotate(' + rot + 'deg)' }
             ], { duration:STEP_MS, easing:'ease-in-out', fill:'forwards' });
           } catch(e){}
           setPos(nx, ny, rot);
           dropPrint(px + (k % 2 ? -9 : 9), py + 14, k % 2 ? -18 : 18);
           if (window.pawStep) window.pawStep(k % 2 === 0);
+          if (k === 3){
+            var op = walkPaw.querySelector('.pulse.orange');
+            if (op){ op.classList.remove('go'); void op.offsetWidth; op.classList.add('go'); }
+          }
           px = nx; py = ny;
           if (k === STEPS){
             later(function(){
               if (window.pawPopPitch) window.pawPopPitch(0.15, 1.05);
+              lockSparkles(nx, ny);
               fadePrints();
             }, STEP_MS);
           }
@@ -1740,28 +1992,52 @@
       })(i);
     }
   }
+  // four little "+" stars flashing once at the corners of the
+  // paw + site-name lockup, in the moment the lockup forms
+  function lockSparkles(x, y){
+    if (!transStage) return;
+    var half = 46;
+    var pts = [[x - half, y - half], [x + half, y - half], [x - half, y + half], [x + half, y + half]];
+    for (var i = 0; i < pts.length; i++){
+      var s = document.createElement('span');
+      s.className = 'lock-plus';
+      s.textContent = '+';
+      s.style.left = pts[i][0] + 'px';
+      s.style.top = pts[i][1] + 'px';
+      s.style.fontSize = (15 + (i % 2) * 5) + 'px';
+      s.style.color = i % 2 ? '#ceff1c' : '#ffffff';
+      transStage.appendChild(s);
+      (function(el){
+        requestAnimationFrame(function(){ el.classList.add('go'); });
+        setTimeout(function(){ el.remove(); }, 850);
+      })(s);
+    }
+  }
 
-  // One beat (22–23s) where the whole viewport is "selected": blue
-  // frame, corner handles, a full-screen size tag, a soft zap, and
-  // the resting paw flashes lime — then it is gone.
-  function fullSelFlash(){
-    if (!fullSel) return;
-    var tag = fullSel.querySelector('.sel-tag');
-    if (tag) tag.textContent = window.innerWidth + ' x ' + window.innerHeight;
-    fullSel.hidden = false;
-    fullSel.classList.remove('flash');
-    void fullSel.offsetWidth;
-    fullSel.classList.add('flash');
+  // One hard beat: a single-frame full-screen GRAY flash — and
+  // from this moment the page base is no longer pure black: it
+  // lifts to a dark gray and stays lifted until the very end.
+  function grayFlashStage(){
+    var gf = document.getElementById('grayFlash');
+    if (gf){
+      gf.classList.remove('on');
+      void gf.offsetWidth;
+      gf.classList.add('on');
+    }
+    gate.classList.add('lifted');
+    document.body.classList.add('bg-lifted');
     if (window.pawZap) window.pawZap();
     if (walkPaw) walkPaw.style.filter = 'drop-shadow(0 0 26px rgba(206,255,28,1)) brightness(1.7)';
     later(function(){
-      fullSel.hidden = true;
       if (walkPaw) walkPaw.style.filter = '';
     }, 700);
   }
 
-  // Card-theatre props: a full-width hairline placed above the card
-  // with an oversized live size tag…
+  // Card-theatre props: first ONE full-width line is placed above
+  // the card in its SELECTED state — design-blue, corner handles,
+  // an oversized live size tag — then a few more hairlines join it
+  // until it reads as a placed BAND of lines; the band stays while
+  // the rulers sweep, and fades with the divider landing…
   function placeHairline(){
     if (!hairEl) return;
     var card = document.getElementById('titleOpen');
@@ -1773,14 +2049,52 @@
     hairEl.style.top = top + 'px';
     var tag = hairEl.querySelector('.big-tag');
     if (tag) tag.textContent = window.innerWidth + ' x 1';
+    hairEl.style.background = '#2f7bff';
+    hairEl.style.boxShadow = '0 0 10px rgba(47,123,255,.65)';
+    if (!hairEl.querySelector('.hair-handle')){
+      var hl = document.createElement('i'); hl.className = 'hair-handle l'; hairEl.appendChild(hl);
+      var hrt = document.createElement('i'); hrt.className = 'hair-handle r'; hairEl.appendChild(hrt);
+    }
     hairEl.hidden = false;
     requestAnimationFrame(function(){ hairEl.style.opacity = '1'; });
     if (window.pawSweep) window.pawSweep();
+    // the band assembles: three more hairlines fade in beneath the
+    // lead line, then the selection is released and the lead line
+    // settles to plain hairline white
+    setTimeout(function(){
+      if (hairEl.hidden) return;
+      for (var i = 1; i <= 3; i++){
+        (function(k){
+          setTimeout(function(){
+            if (hairEl.hidden) return;
+            var ex = document.createElement('div');
+            ex.className = 'hair-extra';
+            ex.style.top = (k * 5) + 'px';
+            hairEl.appendChild(ex);
+            requestAnimationFrame(function(){ ex.style.opacity = '1'; });
+          }, k * 160);
+        })(i);
+      }
+      setTimeout(function(){
+        hairEl.style.background = 'rgba(246,232,216,.8)';
+        hairEl.style.boxShadow = '0 0 6px rgba(255,255,255,.4)';
+        var hs = hairEl.querySelectorAll('.hair-handle');
+        for (var j = 0; j < hs.length; j++) hs[j].style.opacity = '0';
+      }, 640);
+    }, 480);
   }
-  // …and a pair of red ruler guides that sweep the page with live
-  // coordinate tags, then retreat.
+  // …and a pair of red ruler guides that trace a full RECTANGLE
+  // around the card — along the top, down the right, along the
+  // bottom, up the left — the travelling corner carrying live
+  // coordinate tags, then both guides retreat.
   function sweepRulers(){
     if (!rulerH || !rulerV) return;
+    var card = document.getElementById('titleOpen');
+    var r = card ? card.getBoundingClientRect()
+      : { left:window.innerWidth * .2, right:window.innerWidth * .8, top:window.innerHeight * .3, bottom:window.innerHeight * .7 };
+    var pad = 12;
+    var x0 = Math.max(4, r.left - pad), x1 = Math.min(window.innerWidth - 4, r.right + pad);
+    var y0 = Math.max(4, r.top - pad), y1 = Math.min(window.innerHeight - 4, r.bottom + pad);
     rulerH.hidden = false;
     rulerV.hidden = false;
     rulerH.style.opacity = '1';
@@ -1788,30 +2102,127 @@
     if (window.pawSweep) window.pawSweep();
     var tagH = rulerH.querySelector('.ruler-tag');
     var tagV = rulerV.querySelector('.ruler-tag');
-    var t0 = performance.now(), DUR = 1250;
+    function setGuides(x, y){
+      rulerH.style.top = y + 'px';
+      rulerV.style.left = x + 'px';
+      if (tagH) tagH.textContent = 'y ' + Math.round(y);
+      if (tagV) tagV.textContent = 'x ' + Math.round(x);
+    }
+    setGuides(x0, y0);
+    var t0 = performance.now(), DUR = 1500;
     var stepR = function(now){
       var p = (now - t0) / DUR;
       if (p >= 1){
+        setGuides(x0, y0);
         rulerH.style.opacity = '0';
         rulerV.style.opacity = '0';
         setTimeout(function(){ rulerH.hidden = true; rulerV.hidden = true; }, 350);
         return;
       }
-      var e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-      var y = 6 + e * 84, x = 6 + e * 84;
-      rulerH.style.top = y + '%';
-      rulerV.style.left = x + '%';
-      if (tagH) tagH.textContent = 'y ' + Math.round(window.innerHeight * y / 100);
-      if (tagV) tagV.textContent = 'x ' + Math.round(window.innerWidth * x / 100);
+      var seg = Math.min(3, Math.floor(p * 4));
+      var q = p * 4 - seg;
+      var e = q < .5 ? 2 * q * q : 1 - Math.pow(-2 * q + 2, 2) / 2;
+      if (seg === 0) setGuides(x0 + (x1 - x0) * e, y0);       // along the top
+      else if (seg === 1) setGuides(x1, y0 + (y1 - y0) * e);  // down the right
+      else if (seg === 2) setGuides(x1 - (x1 - x0) * e, y1);  // along the bottom
+      else setGuides(x0, y1 - (y1 - y0) * e);                 // up the left
       requestAnimationFrame(stepR);
     };
     requestAnimationFrame(stepR);
   }
 
+  // --- finale helpers: half-finished card text + particle burst ---
+  // While the card theatre assembles it, the card's copy is NOT
+  // final: every line shows a half-finished, glyph-garbled draft
+  // (first stretch real, the rest shuffled glyphs). Only at the
+  // reveal instant does the text jump to its final wording.
+  var cardDraft = null;
+  function garbleCard(){
+    if (cardDraft) return;
+    var host = document.getElementById('titleOpen');
+    if (!host) return;
+    var els = host.querySelectorAll('.card-head, h1, .name-line, .card-slogan, .card-links a, .card-copy');
+    cardDraft = [];
+    var GL = 'ABCDEFKLMNPRSTXZ#$%&@/=*+老六猫gatjefe';
+    for (var i = 0; i < els.length; i++){
+      cardDraft.push([els[i], els[i].innerHTML]);
+      var walker = document.createTreeWalker(els[i], NodeFilter.SHOW_TEXT);
+      var nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      for (var j = 0; j < nodes.length; j++){
+        var s = nodes[j].nodeValue;
+        if (!s || !s.replace(/\s/g, '')) continue;
+        var keep = Math.max(1, Math.floor(s.length * 0.35));
+        var out = '';
+        for (var c = 0; c < s.length; c++){
+          if (s[c] === ' ' || s[c] === '·' || c < keep) out += s[c];
+          else out += GL[Math.floor(Math.random() * GL.length)];
+        }
+        nodes[j].nodeValue = out;
+      }
+    }
+  }
+  function finalizeCard(){
+    if (!cardDraft) return;
+    for (var i = 0; i < cardDraft.length; i++) cardDraft[i][0].innerHTML = cardDraft[i][1];
+    cardDraft = null;
+  }
+  // The reveal itself: on a light-gray wash, dot particles burst
+  // out of the centre into a loose cloud, hang for a beat, then
+  // condense back and dissolve as the real background takes over.
+  function startBurst(){
+    var c = document.getElementById('burstCanvas');
+    if (!c) return;
+    var bctx = c.getContext('2d');
+    if (!bctx) return;
+    var W = window.innerWidth, H = window.innerHeight;
+    c.width = W; c.height = H;
+    var cx = W / 2, cy = H * 0.44;
+    var cols = ['#ffffff', '#ffffff', '#ceff1c', '#ffd9a0', '#ffb3c8', '#8fd3ff'];
+    var N = W < 768 ? 90 : 150;
+    var dots = [];
+    for (var i = 0; i < N; i++){
+      dots.push({
+        a: Math.random() * Math.PI * 2,
+        r: Math.pow(Math.random(), 0.6) * Math.min(W, H) * (0.26 + Math.random() * 0.3),
+        s: 1 + Math.random() * 2.6,
+        col: cols[i % cols.length],
+        ph: Math.random() * Math.PI * 2
+      });
+    }
+    var t0 = performance.now(), DUR = 950;
+    function frame(now){
+      var p = (now - t0) / DUR;
+      bctx.clearRect(0, 0, W, H);
+      if (p >= 1) return;
+      var wash = p < 0.25 ? p / 0.25 : 1 - (p - 0.25) / 0.75;
+      bctx.fillStyle = 'rgba(198,198,198,' + (0.5 * wash).toFixed(3) + ')';
+      bctx.fillRect(0, 0, W, H);
+      var expand = 1 - Math.pow(1 - Math.min(p / 0.45, 1), 3);
+      var condense = p > 0.55 ? (p - 0.55) / 0.45 : 0;
+      var shrink = 1 - condense * 0.45;
+      bctx.globalAlpha = 1 - condense * condense;
+      for (var i = 0; i < dots.length; i++){
+        var d = dots[i];
+        var rr = d.r * expand * shrink;
+        var wob = p < 0.55 ? Math.sin(now / 300 + d.ph) * 3 : 0;
+        bctx.fillStyle = d.col;
+        bctx.beginPath();
+        bctx.arc(cx + Math.cos(d.a) * rr, cy + Math.sin(d.a) * rr * 0.82 + wob, d.s, 0, Math.PI * 2);
+        bctx.fill();
+      }
+      bctx.globalAlpha = 1;
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
   function completeReveal(){
     if (entered) return;
     entered = true;
+    finalizeCard();
     transitioning = false;
+    if (window.bedStop) window.bedStop();
     stopScramble();
     hideSel();
     if (transStage) transStage.hidden = true;
@@ -1827,6 +2238,7 @@
   function finishEnter(){ // skip: jump straight to the end state
     if (entered) return;
     clearTimers();
+    if (window.bedStop) window.bedStop();
     stopScramble();
     if (scrambleEl) scrambleEl.hidden = true;
     if (meowEl) meowEl.hidden = true;
@@ -1857,130 +2269,161 @@
     scatterRing();
     transStage.hidden = false;
 
-    // — 1–7s: slogan «Aquí mana el gat» assembles word by word at a
-    // slower, readable pace — selection frame hopping with live size
-    // numbers, a tick on each landing, an Alt-drag ghost on word two,
-    // and a half-beat of stillness after every word —
-    var wordAt = [600, 2100, 3600, 5100];
+    // — 0.5–3.2s: slogan «Aquí mana el gat» assembles FAST — one
+    // word every ~0.65s, the whole line done in under 3s (the owner
+    // asked twice for this to stop dragging). The selection frame
+    // still hops with live size numbers, but each word lands with
+    // its own voice (pop / tok / tick+paper / ding), an Alt-drag
+    // ghost rides word two, and the arpeggio bed hums underneath —
+    if (window.bedStart) window.bedStart();
+    var wordAt = [500, 1150, 1800, 2450];
     for (var w = 0; w < words.length; w++){
-      (function(word, at, withGhost){
+      (function(word, at, k, withGhost){
         later(function(){
           word.classList.add('in');
-          followSel(word, 720);
-          later(function(){ if (window.pawTick) window.pawTick(); }, 200);
+          followSel(word, 520);
+          later(function(){ if (window.pawWord) window.pawWord(k); }, 170);
           if (withGhost) later(function(){ spawnGhost(word); }, 120);
         }, at);
-      })(words[w], wordAt[w] || (600 + w * 1500), w === 1);
+      })(words[w], wordAt[w] || (500 + w * 650), w, w === 1);
     }
-    // — 7–8s: the whole line locks — frame flashes, "clack" —
+    // — 3.3s: the whole line locks with the big layered accent
+    // (thump + click + climbing arpeggio) — the loudest hit so far —
     later(function(){
       followSel(slogan, 80);
       later(function(){
         placeSel(slogan);
         if (selBox) selBox.classList.add('flash');
-        if (window.pawLock) window.pawLock();
+        if (window.pawLockBig) window.pawLockBig();
       }, 100);
-    }, 6600);
+    }, 3300);
 
-    // — 8–12s: machine-translation gag in full — character shuffle
-    // with blips, «这里说了算这只猫» resolves and holds ~1.2s,
-    // then shuffles away again —
-    later(startScramble, 8000);
+    // — 4.3–9.2s: machine-translation gag in full — the bed fades
+    // out and the stage drops to near-silence: sparse shuffle blips
+    // only, «这里说了算这只猫» resolves and holds a full 2s so it
+    // can be read, then shuffles away again —
+    later(function(){ if (window.bedStop) window.bedStop(); }, 4000);
+    later(startScramble, 4300);
 
-    // — 12–14s: cat-language interlude (original) — the sentence turns
-    // into four «Mèu», a paw popping above each, four soft meow notes
-    // at slightly different pitches —
-    later(startMeows, 12000);
-    later(function(){ if (meowEl) meowEl.classList.add('out'); }, 13950);
+    // — 9.4–11.6s: cat-language interlude (original) — the sentence
+    // turns into four «Mèu», a paw popping above each, and four REAL
+    // cats answer in turn: meow-1, meow-2, meow-3, meow-4 —
+    later(startMeows, 9400);
+    later(function(){ if (meowEl) meowEl.classList.add('out'); }, 11650);
 
-    // — 14–17s: the meows collapse into the big title; a wave ripples
-    // through its letters one by one; the hand-drawn underline sweeps
-    // below; the «Mèu~» bubble pops with the two-note meow; hold —
+    // — 12.1–14.6s: the meows collapse into the big title; a wave
+    // ripples through its letters one by one; the hand-drawn
+    // underline sweeps below; the «Mèu~» bubble pops with a REAL
+    // meow (meow-1); hold —
     later(function(){
       if (meowEl) meowEl.hidden = true;
       titleWrap.classList.add('in');
-    }, 14400);
-    later(waveTitle, 14850);
-    later(function(){ if (titleWave) titleWave.classList.add('draw'); }, 15600);
+    }, 12100);
+    later(waveTitle, 12550);
+    later(function(){ if (titleWave) titleWave.classList.add('draw'); }, 13300);
     later(function(){
       if (meuBubble) meuBubble.classList.add('pop');
-      if (window.pawMeow) window.pawMeow();
-    }, 16000);
+      if (window.pawRealMeow) window.pawRealMeow(1);
+    }, 13700);
 
-    // — 17–22s: the title shrinks toward the card; the gate paw is
-    // "selected" (live 56 x 56 tag, pulse ring), then walks home
-    // cat-style — six steps, alternating tilt, a footprint and a soft
-    // tap at each step; the footprints fade once it arrives —
-    later(function(){ titleWrap.classList.add('settle'); }, 17000);
-    later(startWalk, 17600);
+    // — 14.6–19.6s: the title shrinks toward the card; the gate paw
+    // is "selected" (live 56 x 56 tag, pulse ring), then walks home
+    // cat-style — six steps at a slower, readable gait, alternating
+    // tilt, a footprint and a soft tap at each step; the footprints
+    // fade once it arrives —
+    later(function(){ titleWrap.classList.add('settle'); }, 14600);
+    later(startWalk, 15200);
 
-    // — 22–23s: the whole viewport is "selected" for one beat — blue
-    // frame, corner handles, full-screen size tag, zap, the resting
-    // paw flashes lime — then the frame is gone and the paw fades —
-    later(fullSelFlash, 22100);
+    // — 19.9–20.7s: one full-screen GRAY flash — and the page base
+    // lifts from pure black to dark gray for the rest of the show —
+    // then the resting paw fades —
+    later(grayFlashStage, 19900);
     later(function(){
       if (walkPaw){ walkPaw.style.transition = 'opacity .5s ease'; walkPaw.style.opacity = '0'; }
       hideSel();
-    }, 22900);
+    }, 20700);
 
-    // — 23–28s: the card theatre. The gate's black lifts (the ASCII
-    // background still waits for the finale), CRT scanlines swell, a
-    // full-width hairline is placed above the card with an oversized
-    // live tag, red ruler guides sweep the page and retreat, the
-    // wireframe draws itself, and the five pieces land one by one,
-    // each hugged by the selection frame with a soft pop —
+    // — 21.2–27.2s: the card theatre, with the arpeggio bed back
+    // under it. The gate's black lifts (the ASCII background still
+    // waits for the finale), CRT scanlines swell, the card's copy
+    // is swapped for a garbled half-finished draft, a SELECTED blue
+    // full-width line is placed above the card and grows into a
+    // band of hairlines with an oversized live tag, red ruler
+    // guides trace a rectangle around the card and retreat, the
+    // wireframe draws itself, and the five pieces land one by one
+    // — each at least 0.8s apart, each hugged by the selection
+    // frame, each with its own timbre (tok / pop / paper / ding /
+    // tok) —
     later(function(){
       gate.classList.add('clear');
       gate.classList.add('crt-boost');
       document.body.classList.add('assembling');
       document.body.classList.add('card-in');
-    }, 23000);
-    later(placeHairline, 23300);
-    later(function(){ if (cardFrame) cardFrame.classList.add('draw'); }, 23400);
-    later(sweepRulers, 24200);
-    later(function(){ landEl('head', 1.18); }, 25100);
-    later(function(){ if (cardFrame) cardFrame.classList.add('done'); }, 25600);
-    later(function(){ landEl('title', 0.88); }, 25800);
-    later(function(){ landEl('slogan', 1.1); }, 26400);
-    later(function(){ landEl('links', 0.94); }, 27000);
+      garbleCard();
+      if (window.bedStart) window.bedStart();
+    }, 21200);
+    later(placeHairline, 21500);
+    later(function(){ if (cardFrame) cardFrame.classList.add('draw'); }, 21600);
+    later(sweepRulers, 22400);
+    later(function(){ landEl('head'); }, 23300);
+    later(function(){ if (cardFrame) cardFrame.classList.add('done'); }, 24000);
+    later(function(){ landEl('title'); }, 24200);
+    later(function(){ landEl('slogan'); }, 25000);
+    later(function(){ landEl('links'); }, 25800);
     later(function(){
       var dv = document.querySelector('[data-asm="divider"]');
       if (dv) dv.classList.add('landed');
       if (window.pawSweep) window.pawSweep();
-    }, 27500);
+    }, 26600);
     later(function(){
       if (hairEl) hairEl.style.opacity = '0';
       later(function(){ if (hairEl) hairEl.hidden = true; }, 600);
-    }, 27900);
+    }, 27200);
 
-    // — 28–31s: © small print lands, the completion chime rings, the
-    // scanline swell subsides, a soft white flash — and only now do
+    // — 27.8–29.7s: © small print lands, the completion sting rings
+    // (three-note chord), the bed and scanlines subside, and the
+    // reveal lands: dot particles burst from the centre into a
+    // cloud on a light-gray wash and condense away, the card's
+    // garbled draft text jumps to its final wording in the same
+    // instant, and the full-band finale burst sounds — the loudest
+    // sound of the show — after which ALL sound stops. Only now do
     // the ASCII background, menu row, music player and footer rise
-    // in. Once the page has settled, 老六 greets once by himself. —
-    later(function(){ landEl('copy', 1.0); }, 28200);
-    later(function(){ if (window.pawChime) window.pawChime(); }, 28600);
+    // in. Once the page has settled, 老六 greets once by himself —
+    // with a real meow (meow-3). —
+    later(function(){ landEl('copy'); }, 27800);
+    later(function(){
+      if (window.pawSting) window.pawSting();
+      if (window.bedStop) window.bedStop();
+    }, 28400);
     later(function(){
       gate.classList.remove('crt-boost');
       var wf = document.getElementById('whiteFlash');
       if (wf) wf.classList.add('on');
-      if (window.pawSwell) window.pawSwell();
-    }, 29500);
+      startBurst();
+      finalizeCard();
+      if (window.pawFinale) window.pawFinale();
+    }, 29000);
     later(function(){
       completeReveal();
       setTimeout(function(){ window.dispatchEvent(new Event('laoliu-greet')); }, 1500);
-    }, 30200);
+    }, 29700);
   }
 
-  // The pop must start inside the pointer gesture itself: create/resume
-  // the AudioContext and play synchronously on pointerdown. A keyboard
-  // click has no pointerdown, so the click handler plays it instead.
+  // The entry sound must start inside the pointer gesture itself:
+  // a REAL cat meow (meow-0) as the main voice, with only a whisper
+  // of the old pop underneath as a click pad. A keyboard click has
+  // no pointerdown, so the click handler plays it instead.
   var lastPopAt = 0;
   gateBtn.addEventListener('pointerdown', function(){
     lastPopAt = Date.now();
-    if (window.pawPop) window.pawPop(0.3);
+    if (window.pawRealMeow) window.pawRealMeow(0);
+    if (window.pawPop) window.pawPop(0.06);
   });
   gateBtn.addEventListener('click', function(){
-    if (Date.now() - lastPopAt > 600 && window.pawPop) window.pawPop(0.3);
+    if (Date.now() - lastPopAt > 600){
+      if (window.pawRealMeow) window.pawRealMeow(0);
+      if (window.pawPop) window.pawPop(0.06);
+    }
     enter();
   });
   // pressing again during the choreography skips straight to the site
@@ -2004,11 +2447,15 @@
     {ca:"Gràcies per venir! Torna aviat.", cn:"谢谢你来！要常来玩哦。"}
   ];
   var idx = 0;
+  var meowCycle = 0;
   var btn = document.getElementById('meowBtn');
   var bCa = document.getElementById('bubbleCa');
   var bCn = document.getElementById('bubbleCn');
   btn.addEventListener('click', function(){
-    if (window.pawClick) window.pawClick();
+    // every press is answered by a REAL cat, rotating through all
+    // five recordings so it never sounds like the same sample twice
+    if (window.pawRealMeow) window.pawRealMeow(meowCycle % 5);
+    meowCycle++;
     idx = (idx + 1) % phrases.length;
     bCa.textContent = phrases[idx].ca;
     bCn.textContent = phrases[idx].cn;
@@ -2034,7 +2481,7 @@
         ], { duration:520, easing:'ease-out' });
       } catch(e){ /* no WAAPI: the text alone still greets */ }
     }
-    if (window.pawMeowNote) window.pawMeowNote(1.0);
+    if (window.pawRealMeow) window.pawRealMeow(3);
   });
 
   // --- rotating multilingual "click to view" hint (Catalan first) ---
