@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="color-scheme" content="dark" />
 <meta name="description" content="La casa de Lao Liu (老六) a internet — vov.cat. Un gatet blanc que encara pren el biberó i dorm de panxa enlaire." />
-<link rel="icon" href="data:," />
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%23000'/%3E%3Cg%20fill='%23ceff1c'%3E%3Cellipse%20cx='32'%20cy='42'%20rx='11'%20ry='9'/%3E%3Cellipse%20cx='13'%20cy='30'%20rx='5'%20ry='7'%20transform='rotate(-20%2013%2030)'/%3E%3Cellipse%20cx='23'%20cy='21'%20rx='5.5'%20ry='7.5'%20transform='rotate(-7%2023%2021)'/%3E%3Cellipse%20cx='41'%20cy='21'%20rx='5.5'%20ry='7.5'%20transform='rotate(7%2041%2021)'/%3E%3Cellipse%20cx='51'%20cy='30'%20rx='5'%20ry='7'%20transform='rotate(20%2051%2030)'/%3E%3C/g%3E%3C/svg%3E" />
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns='http://www.w3.org/2000/svg'%20viewBox='0%200%2064%2064'%3E%3Crect%20width='64'%20height='64'%20rx='14'%20fill='%23000'/%3E%3Cg%20fill='%23ceff1c'%3E%3Cellipse%20cx='32'%20cy='42'%20rx='11'%20ry='9'/%3E%3Cellipse%20cx='13'%20cy='30'%20rx='5'%20ry='7'%20transform='rotate(-20%2013%2030)'/%3E%3Cellipse%20cx='23'%20cy='21'%20rx='5.5'%20ry='7.5'%20transform='rotate(-7%2023%2021)'/%3E%3Cellipse%20cx='41'%20cy='21'%20rx='5.5'%20ry='7.5'%20transform='rotate(7%2041%2021)'/%3E%3Cellipse%20cx='51'%20cy='30'%20rx='5'%20ry='7'%20transform='rotate(20%2051%2030)'/%3E%3C/g%3E%3C/svg%3E" />
 <title>老六的家 · vov.cat — La casa de Lao Liu</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -664,6 +665,20 @@
 
   var W=0, H=0, cols=0, rows=0, cellW=0, cellH=0, fontSize=0;
   var frameInterval = 33, lastDraw = 0, ripples = [];
+  // Pointer glow (uwu-style): target is the raw pointer; smooth chases it
+  // with interpolation so the light trails a little; strength eases in on
+  // move and fades back out when the pointer leaves.
+  var ptrTX = -9999, ptrTY = -9999, ptrSX = -9999, ptrSY = -9999;
+  var ptrStrength = 0, ptrTargetStrength = 0;
+  function ptrTick(){
+    if (ptrSX < -1000 && ptrTargetStrength > 0){ ptrSX = ptrTX; ptrSY = ptrTY; }
+    else if (ptrTargetStrength > 0){
+      ptrSX += (ptrTX - ptrSX) * 0.14;
+      ptrSY += (ptrTY - ptrSY) * 0.14;
+    }
+    ptrStrength += (ptrTargetStrength - ptrStrength) * 0.07;
+    if (ptrTargetStrength === 0 && ptrStrength < 0.004) ptrStrength = 0;
+  }
   var posterImg = null, posterReady = false, videoFailed = false;
   var glMode = false;
   // Density ladder: start at the finest grid; if the measured frame rate
@@ -675,14 +690,14 @@
     W = window.innerWidth; H = window.innerHeight;
     var small = W < 768;
     frameInterval = glMode ? (small ? 50 : 33) : (small ? 66 : 50);
-    var targetCellW = (small ? 5.8 : 6.5) * DENSITY_MULT[densityStep];
+    var targetCellW = (small ? 5.0 : 5.35) * DENSITY_MULT[densityStep];
     fontSize = targetCellW / 0.6;                  // monospace advance ≈ 0.6em
     cellW = targetCellW;
     cellH = fontSize * 1.12;
     cols = Math.max(24, Math.floor(W / cellW));
     rows = Math.max(18, Math.floor(H / cellH));
-    if (cols > 380){                               // cap work on very wide screens
-      var s = cols / 380;
+    if (cols > 460){                               // cap work on very wide screens
+      var s = cols / 460;
       fontSize *= s; cellW = fontSize * 0.6; cellH = fontSize * 1.12;
       cols = Math.floor(W / cellW); rows = Math.floor(H / cellH);
     }
@@ -712,6 +727,7 @@
       'uniform float uSrcAspect;',
       'uniform float uCanvasAspect;',
       'uniform float uTime;',
+      'uniform vec3 uPointer;',
       'uniform vec4 uRipples[4];',
       'void main(){',
       '  vec2 cell = floor(vUv * uGrid);',
@@ -743,13 +759,20 @@
       '      glow += band;',
       '    }',
       '  }',
+      '  float pfall = 0.0;',
+      '  if (uPointer.z > 0.003){',
+      '    float pd = distance(px, uPointer.xy);',
+      '    pfall = uPointer.z * exp(-pd * pd / 14450.0);',
+      '    b += pfall * 0.5;',
+      '  }',
       '  b = clamp(b, 0.0, 1.0);',
       '  float idx = floor(b * 15.0 + 0.5);',
       '  vec2 local = fract(vUv * uGrid);',
       '  vec2 auv = vec2((idx + local.x) / 16.0, local.y);',
       '  float mask = texture2D(uAtlas, auv).a;',
       '  vec3 boosted = mix(vec3(lum), col, 1.30) * 1.18;',
-      '  boosted *= (1.0 + glow * 0.5);',
+      '  boosted = mix(vec3(lum), boosted, 1.0 + pfall * 0.35);',
+      '  boosted *= (1.0 + glow * 0.5 + pfall * 0.6);',
       '  gl_FragColor = vec4(boosted * mask, 1.0);',
       '}'
     ].join('\n');
@@ -783,6 +806,7 @@
       U.srcAspect = gl.getUniformLocation(prog, 'uSrcAspect');
       U.canvasAspect = gl.getUniformLocation(prog, 'uCanvasAspect');
       U.time = gl.getUniformLocation(prog, 'uTime');
+      U.pointer = gl.getUniformLocation(prog, 'uPointer');
       U.ripples = gl.getUniformLocation(prog, 'uRipples');
       gl.uniform1i(gl.getUniformLocation(prog, 'uSrc'), 0);
       gl.uniform1i(gl.getUniformLocation(prog, 'uAtlas'), 1);
@@ -849,6 +873,7 @@
     gl.uniform1f(U.srcAspect, aspect);
     gl.uniform1f(U.canvasAspect, W / H);
     gl.uniform1f(U.time, now / 1000);
+    if (U.pointer) gl.uniform3f(U.pointer, ptrSX, ptrSY, reduceMotion ? 0 : ptrStrength);
     var rp = new Float32Array(16);
     for (var i = 0; i < 4; i++){
       var r = ripples[i];
@@ -897,8 +922,8 @@
         var lum = (r0 * 0.2126 + g0 * 0.7152 + b0 * 0.0722) / 255;
         var b = Math.pow(lum, 0.85);
         b = (b - 0.5) * 1.45 + 0.5;
+        var cx = x * cellW + cellW / 2;
         if (ripples.length){
-          var cx = x * cellW + cellW / 2;
           for (k = 0; k < ripples.length; k++){
             var rp2 = ripples[k]; age = t - rp2.t;
             var dx = cx - rp2.x, dy = cy - rp2.y;
@@ -908,14 +933,26 @@
             if (band > 0.01) b += band * 0.7 * Math.sin((d - front) * 0.11);
           }
         }
+        // pointer glow, equivalent to the WebGL path: only cells inside
+        // the ~170px radius pay for the falloff computation
+        var pfall = 0;
+        if (!reduceMotion && ptrStrength > 0.003){
+          var pdx = cx - ptrSX, pdy = cy - ptrSY;
+          if (pdx > -180 && pdx < 180 && pdy > -180 && pdy < 180){
+            pfall = ptrStrength * Math.exp(-(pdx*pdx + pdy*pdy) / 14450);
+            b += pfall * 0.5;
+          }
+        }
         if (b < 0) b = 0; else if (b > 1) b = 1;
         var chIdx = Math.round(b * MAXI);
         if (chIdx === 0) continue;               // space: leave black
         // original colour, saturation x1.30, brightness x1.18, quantised for the style cache
         var lum255 = r0 * 0.2126 + g0 * 0.7152 + b0 * 0.0722;
-        var rr = (lum255 + (r0 - lum255) * 1.30) * 1.18;
-        var gg = (lum255 + (g0 - lum255) * 1.30) * 1.18;
-        var bb = (lum255 + (b0 - lum255) * 1.30) * 1.18;
+        var satF = 1.30 * (1 + pfall * 0.35);
+        var briF = 1.18 * (1 + pfall * 0.6);
+        var rr = (lum255 + (r0 - lum255) * satF) * briF;
+        var gg = (lum255 + (g0 - lum255) * satF) * briF;
+        var bb = (lum255 + (b0 - lum255) * satF) * briF;
         var key = (((rr >> 3) & 31) << 10) | (((gg >> 3) & 31) << 5) | ((bb >> 3) & 31);
         if (key !== lastKey){
           var st = styleCache[key];
@@ -972,6 +1009,7 @@
   }
   function loop(now){
     requestAnimationFrame(loop);
+    ptrTick();
     if (document.hidden || videoFailed) return;
     if (now - lastDraw < frameInterval) return;
     if (glMode){
@@ -994,9 +1032,20 @@
   });
   window.addEventListener('pointerdown', function(e){
     if (reduceMotion) return;
+    ptrTX = e.clientX; ptrTY = e.clientY; ptrTargetStrength = 1;
     ripples.push({ x:e.clientX, y:e.clientY, t:performance.now() / 1000 });
     if (ripples.length > 4) ripples.shift();
   });
+  // Pointer glow tracking: mouse move and touch drag both feed the target;
+  // leaving the window (or blurring) fades the light back out.
+  window.addEventListener('pointermove', function(e){
+    if (reduceMotion) return;
+    ptrTX = e.clientX; ptrTY = e.clientY; ptrTargetStrength = 1;
+  }, { passive:true });
+  window.addEventListener('pointerup', function(e){ if (e.pointerType !== 'mouse') ptrTargetStrength = 0; });
+  window.addEventListener('pointercancel', function(){ ptrTargetStrength = 0; });
+  document.addEventListener('mouseleave', function(){ ptrTargetStrength = 0; });
+  window.addEventListener('blur', function(){ ptrTargetStrength = 0; });
 
   resize();
   loadPoster();
