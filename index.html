@@ -411,6 +411,110 @@
     .gate-btn svg{width:58px;height:58px}
   }
 
+  /* ---------- entry choreography: slogan → title → fly home → reveal ---------- */
+  .gate{transition:opacity .65s ease, background-color .4s ease}
+  .gate.entering .gate-inner{opacity:0;transform:scale(1.07)}
+  .gate.entering .gate-btn{pointer-events:none}
+  .gate.entering .gate-drift{opacity:0;transition:opacity .5s ease}
+  .gate-paw{transition:transform .55s ease, opacity .55s ease}
+  /* during the flight home the gate's black lifts so the card can form
+     over the still-black stage; the CRT scanline layer stays on top */
+  .gate.clear{background:transparent}
+  .trans{position:absolute;inset:0;z-index:3;pointer-events:none}
+  .trans-pos{
+    position:absolute;left:50%;top:44%;width:100%;
+    transform:translate(-50%,-50%);
+    display:flex;justify-content:center;padding:0 16px;
+  }
+  .trans-slogan{
+    margin:0;display:flex;gap:.38em;flex-wrap:wrap;justify-content:center;
+    font-family:"Baloo 2","PingFang SC",sans-serif;font-weight:800;
+    font-size:clamp(1.7rem,6.4vw,2.9rem);line-height:1.2;color:var(--ink);
+    text-shadow:0 2px 18px rgba(0,0,0,.9);
+    transition:transform .55s ease, opacity .55s ease;
+  }
+  .trans-slogan span{display:inline-block;opacity:0;transform:translateY(18px) scale(.45)}
+  .trans-slogan span.in{animation:wordIn .4s cubic-bezier(.2,1.7,.4,1) forwards}
+  @keyframes wordIn{to{opacity:1;transform:translateY(0) scale(1)}}
+  .trans-slogan.out{transform:scale(.5) translateY(8px);opacity:0}
+  .trans-titlewrap{
+    position:relative;opacity:0;transform:scale(.55);
+    font-family:"Baloo 2","PingFang SC","Microsoft YaHei",sans-serif;font-weight:800;
+    font-size:clamp(2rem,8vw,3.6rem);line-height:1.15;color:var(--ink);
+    text-shadow:0 2px 22px rgba(0,0,0,.9);white-space:nowrap;
+  }
+  .trans-titlewrap .name{color:var(--accent)}
+  .trans-titlewrap.in{animation:titleIn .65s cubic-bezier(.3,1.2,.4,1) forwards}
+  @keyframes titleIn{
+    0%{opacity:0;transform:scale(.55) rotate(-2.2deg)}
+    55%{opacity:1;transform:scale(1.045) rotate(1.3deg)}
+    78%{transform:scale(.99) rotate(-.6deg)}
+    100%{opacity:1;transform:scale(1) rotate(0deg)}
+  }
+  .trans-titlewrap.out{transition:transform .45s ease, opacity .45s ease;transform:scale(.8) translateY(-10px);opacity:0}
+  .meu-bubble{
+    position:absolute;top:-1.15em;right:-.35em;
+    font-family:"Baloo 2","PingFang SC",sans-serif;font-weight:800;
+    font-size:.34em;color:#0a0f00;background:var(--lime);
+    padding:.28em .8em;border-radius:999px;rotate:8deg;
+    box-shadow:0 0 16px rgba(206,255,28,.65), 0 6px 16px rgba(0,0,0,.45);
+    opacity:0;transform:scale(0);
+  }
+  .meu-bubble.pop{animation:bubblePop .45s cubic-bezier(.2,1.8,.4,1) forwards}
+  @keyframes bubblePop{to{opacity:1;transform:scale(1)}}
+  .meu-bubble.out{transition:transform .3s ease, opacity .3s ease;transform:scale(.4);opacity:0}
+  .trans-fly{
+    position:fixed;left:0;top:0;z-index:210;pointer-events:none;
+    color:var(--lime);opacity:0;
+    filter:drop-shadow(0 0 10px rgba(206,255,28,.7));
+  }
+  .trans-fly svg{display:block;width:100%;height:100%}
+  /* design-tool selection frame that hops between the slogan words:
+     thin selection-blue border, corner handles, and a size tag in
+     monospace showing the word's rendered pixel dimensions */
+  .sel-box{
+    position:absolute;z-index:4;pointer-events:none;
+    border:1.5px solid #2f7bff;
+  }
+  .sel-h{position:absolute;width:7px;height:7px;background:#fff;border:1.5px solid #2f7bff;border-radius:1px}
+  .sel-h.tl{left:-5px;top:-5px}
+  .sel-h.tr{right:-5px;top:-5px}
+  .sel-h.bl{left:-5px;bottom:-5px}
+  .sel-h.br{right:-5px;bottom:-5px}
+  .sel-tag{
+    position:absolute;left:-1.5px;top:-25px;
+    background:#2f7bff;color:#fff;
+    font-family:ui-monospace,"SF Mono",Menlo,Consolas,"Courier New",monospace;
+    font-size:10.5px;font-weight:600;line-height:1.4;
+    padding:2px 6px;border-radius:3px;white-space:nowrap;letter-spacing:.02em;
+  }
+  .sel-box.flash{animation:selFlash .4s ease}
+  @keyframes selFlash{
+    0%,100%{box-shadow:0 0 0 0 rgba(47,123,255,0)}
+    35%{box-shadow:0 0 0 6px rgba(47,123,255,.45)}
+  }
+  /* translucent Alt-drag ghost copy of a word, merging into the original */
+  .ghost-word{
+    position:absolute;z-index:2;pointer-events:none;white-space:nowrap;
+    font-family:"Baloo 2","PingFang SC",sans-serif;font-weight:800;line-height:1.2;
+    color:#fff;opacity:0;
+  }
+  /* staged reveal: the intro card forms first over black; the ASCII
+     background, menu row and music player fade in only at the very end */
+  .stage .site-tag,.stage .meow-row,.stage .menu,.foot{transition:opacity .7s ease}
+  body:not(.entered) .stage .site-tag,
+  body:not(.entered) .stage .typewriter,
+  body:not(.entered) .stage .hint,
+  body:not(.entered) .stage .meow-row,
+  body:not(.entered) .stage .menu,
+  body:not(.entered) .foot,
+  body:not(.entered) .orbit-ring{opacity:0}
+  body.card-in:not(.entered) .stage{opacity:1;pointer-events:none}
+  body.card-in:not(.entered) .bg-stage{opacity:0}
+  body.card-in:not(.entered) .music-player{opacity:0;pointer-events:none}
+  body.card-in .title-zone{animation:cardForm .55s cubic-bezier(.2,1.3,.4,1) both}
+  @keyframes cardForm{from{opacity:0;transform:scale(.9) translateY(12px)}to{opacity:1;transform:scale(1) translateY(0)}}
+
   /* ---------- floating music player ---------- */
   .music-player{
     position:fixed;z-index:30;
@@ -548,6 +652,18 @@
     <div class="gate-arrow" aria-hidden="true">
       <svg viewBox="0 0 24 24"><path d="M12 5.5 3.8 13.7l1.8 1.8L12 9.1l6.4 6.4 1.8-1.8L12 5.5z"/></svg>
     </div>
+  </div>
+  <!-- entry choreography stage: slogan assembles, morphs into the title,
+       then the paw flies home and the card forms (decorative) -->
+  <div class="trans" id="transStage" hidden aria-hidden="true">
+    <div class="trans-pos">
+      <p class="trans-slogan" id="transSlogan"><span>Aquí</span><span>mana</span><span>el</span><span>gat</span></p>
+    </div>
+    <div class="trans-pos">
+      <div class="trans-titlewrap" id="transTitleWrap">La casa de <span class="name">Lao&nbsp;Liu</span><span class="meu-bubble" id="meuBubble">Mèu~</span></div>
+    </div>
+    <div class="trans-fly" id="transFly"></div>
+    <div class="sel-box" id="selBox" hidden><i class="sel-h tl"></i><i class="sel-h tr"></i><i class="sel-h bl"></i><i class="sel-h br"></i><span class="sel-tag" id="selTag">0 x 0</span></div>
   </div>
 </div>
 
@@ -820,27 +936,75 @@
   // created lazily inside the first click; if audio is unavailable the
   // helper stays silent and never blocks the interaction. ---
   var actx = null;
-  window.pawClick = function(){
+  // The context is created/resumed synchronously inside a real pointer
+  // gesture (see the gate button's pointerdown handler and the one-time
+  // document primer below) — that is what browsers require for the sound
+  // to actually be audible; creating it later, inside a click callback
+  // chain or a timer, can leave it suspended and silent.
+  function ensureCtx(){
     try {
       var AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
+      if (!AC) return null;
       if (!actx) actx = new AC();
       if (actx.state === 'suspended') actx.resume();
-      var t = actx.currentTime;
-      var osc = actx.createOscillator();
-      var gain = actx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(560, t);
-      osc.frequency.exponentialRampToValueAtTime(180, t + 0.085);
-      gain.gain.setValueAtTime(0.0001, t);
-      gain.gain.exponentialRampToValueAtTime(0.14, t + 0.012);
-      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.11);
-      osc.connect(gain);
-      gain.connect(actx.destination);
-      osc.start(t);
-      osc.stop(t + 0.13);
+      return actx;
+    } catch(e){ return null; }
+  }
+  function blip(ctx, type, f0, f1, dur, peak, delay){
+    var t = ctx.currentTime + (delay || 0);
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(f0, t);
+    osc.frequency.exponentialRampToValueAtTime(Math.max(f1, 1), t + dur);
+    gain.gain.setValueAtTime(0.0001, t);
+    gain.gain.exponentialRampToValueAtTime(peak, t + 0.012);
+    gain.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.02);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(t);
+    osc.stop(t + dur + 0.04);
+  }
+  // The "pop" （啵）: a sine body sliding 520Hz → 180Hz over ~0.15s plus a
+  // very short high-frequency click on top. Peak is a parameter: the
+  // entry click is loudest (0.3), everyday UI clicks sit at 0.2.
+  window.pawPop = function(peak){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      blip(ctx, 'sine', 520, 180, 0.15, peak, 0);
+      blip(ctx, 'triangle', 2500, 1100, 0.03, peak * 0.45, 0);
     } catch(e){ /* no audio: stay silent */ }
   };
+  // Word-landing tick during the entry choreography: same family, but
+  // shorter, higher and quieter (peak ≈ 0.12).
+  window.pawTick = function(){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      blip(ctx, 'sine', 760, 320, 0.07, 0.12, 0);
+      blip(ctx, 'triangle', 2800, 1400, 0.02, 0.05, 0);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+  // Sentence-lock "clack": shorter and firmer than the word tick —
+  // a crisp high click over a low thock (peak ≈ 0.18), played when the
+  // assembled slogan locks in and the selection frame flashes.
+  window.pawLock = function(){
+    var ctx = ensureCtx();
+    if (!ctx) return;
+    try {
+      blip(ctx, 'square', 1250, 340, 0.045, 0.10, 0);
+      blip(ctx, 'sine', 480, 190, 0.09, 0.18, 0);
+    } catch(e){ /* no audio: stay silent */ }
+  };
+  window.pawClick = function(){ window.pawPop(0.2); };
+  // Prime the context on the visitor's very first pointer press anywhere,
+  // so every later programmatic sound (ticks, button pops) starts from an
+  // already-running context.
+  document.addEventListener('pointerdown', function primeAudio(){
+    document.removeEventListener('pointerdown', primeAudio);
+    ensureCtx();
+  });
 
   // --- intro gate: black opening screen; click the paw icon to enter ---
   var gate = document.getElementById('gate');
@@ -907,18 +1071,226 @@
     }, 2400);
   }
 
+  // --- entry choreography (uwu-style, ~5s; pressing again skips) ---
+  // click paw → ring paws scatter → slogan «Aquí mana el gat» assembles
+  // word by word (design-tool selection frame hopping between words,
+  // tick on each landing) → sentence flashes selected → morphs into the
+  // big title with a «Mèu~» bubble → title settles, paw flies home to
+  // the intro card → card forms over black → ASCII background, menu row
+  // and music player fade in last.
+  var transStage = document.getElementById('transStage');
+  var slogan = document.getElementById('transSlogan');
+  var titleWrap = document.getElementById('transTitleWrap');
+  var meuBubble = document.getElementById('meuBubble');
+  var fly = document.getElementById('transFly');
+  var selBox = document.getElementById('selBox');
+  var selTag = document.getElementById('selTag');
+  var words = slogan ? slogan.querySelectorAll('span') : [];
+  if (fly) fly.innerHTML = PAW;
+
   var entered = false;
-  function enter(){
+  var transitioning = false;
+  var transStart = 0;
+  var enterDispatched = false;
+  var timers = [];
+  function later(fn, ms){ timers.push(setTimeout(fn, ms)); }
+  function clearTimers(){ for (var i = 0; i < timers.length; i++) clearTimeout(timers[i]); timers = []; }
+
+  function scatterRing(){
+    if (!orbit) return;
+    var paws = orbit.querySelectorAll('.gate-paw');
+    for (var i = 0; i < paws.length; i++){
+      var p = paws[i];
+      var dx = parseFloat(p.style.left) - 50;
+      var dy = parseFloat(p.style.top) - 50;
+      p.style.transform = 'translate(' + (dx * 2.6) + 'px,' + (dy * 2.6) + 'px) scale(.55)';
+      p.style.opacity = '0';
+    }
+  }
+
+  // selection frame: follows a word while it bounces in, then sits on it
+  var selFollow = 0;
+  function placeSel(target){
+    if (!selBox || !transStage || !target) return;
+    var tr = transStage.getBoundingClientRect();
+    var r = target.getBoundingClientRect();
+    var pad = 5;
+    selBox.style.left = (r.left - tr.left - pad) + 'px';
+    selBox.style.top = (r.top - tr.top - pad) + 'px';
+    selBox.style.width = (r.width + pad * 2) + 'px';
+    selBox.style.height = (r.height + pad * 2) + 'px';
+    if (selTag) selTag.textContent = Math.round(r.width) + ' x ' + Math.round(r.height);
+    selBox.hidden = false;
+  }
+  function followSel(target, dur){
+    if (!selBox) return;
+    cancelAnimationFrame(selFollow);
+    var t0 = performance.now();
+    var step = function(now){
+      placeSel(target);
+      if (now - t0 < dur) selFollow = requestAnimationFrame(step);
+    };
+    selFollow = requestAnimationFrame(step);
+  }
+  function hideSel(){
+    cancelAnimationFrame(selFollow);
+    if (selBox){ selBox.hidden = true; selBox.classList.remove('flash'); }
+  }
+
+  // Alt-drag ghost: a translucent copy of one word flashes in offset
+  // from the original, then slides in and merges with it.
+  function spawnGhost(word){
+    if (!transStage || !word) return;
+    var g = document.createElement('span');
+    g.className = 'ghost-word';
+    g.textContent = word.textContent;
+    var tr = transStage.getBoundingClientRect();
+    var r = word.getBoundingClientRect();
+    g.style.left = (r.left - tr.left) + 'px';
+    g.style.top = (r.top - tr.top) + 'px';
+    try { g.style.fontSize = window.getComputedStyle(word).fontSize; } catch(e){}
+    transStage.appendChild(g);
+    try {
+      var anim = g.animate([
+        { transform:'translate(20px,12px) scale(.96)', opacity:.38 },
+        { transform:'translate(0px,0px) scale(1)', opacity:0 }
+      ], { duration:360, easing:'ease-out', fill:'forwards' });
+      if (anim && anim.finished) anim.finished.then(function(){ g.remove(); }).catch(function(){});
+      else setTimeout(function(){ g.remove(); }, 450);
+    } catch(e){ g.remove(); }
+  }
+
+  function flyAlong(el, size, delay, scaleTo){
+    var target = document.getElementById('titleOpen');
+    if (!target) return;
+    var tr = target.getBoundingClientRect();
+    var sx = window.innerWidth / 2, sy = window.innerHeight * 0.44;
+    var ex = tr.left + tr.width / 2, ey = tr.top + 14;
+    var midX = (sx + ex) / 2, midY = Math.min(sy, ey) - 80;
+    el.style.width = size + 'px';
+    el.style.height = size + 'px';
+    try {
+      el.animate([
+        { transform:'translate(' + (sx - size / 2) + 'px,' + (sy - size / 2) + 'px) scale(1)', opacity:1 },
+        { transform:'translate(' + (midX - size / 2) + 'px,' + (midY - size / 2) + 'px) scale(' + ((1 + scaleTo) / 2) + ')', opacity:1, offset:.55 },
+        { transform:'translate(' + (ex - size / 2) + 'px,' + (ey - size / 2) + 'px) scale(' + scaleTo + ')', opacity:0 }
+      ], { duration:700, delay:delay, easing:'cubic-bezier(.4,.1,.3,1)', fill:'forwards' });
+    } catch(e){ el.style.opacity = '0'; }
+  }
+  function startFlight(){
+    if (!fly) return;
+    fly.style.opacity = '1';
+    flyAlong(fly, 54, 0, .5);
+    if (!transStage) return;
+    for (var i = 0; i < 3; i++){
+      var trail = document.createElement('div');
+      trail.className = 'trans-fly';
+      trail.innerHTML = PAW;
+      trail.style.color = pawColors[(i + 1) % pawColors.length];
+      trail.style.opacity = '.85';
+      transStage.appendChild(trail);
+      flyAlong(trail, 30 - i * 8, 90 * (i + 1), .5);
+    }
+  }
+
+  function completeReveal(){
     if (entered) return;
     entered = true;
-    if (window.pawClick) window.pawClick();
-    if (hintTimer) clearInterval(hintTimer);
-    gate.classList.add('leaving');
+    transitioning = false;
+    hideSel();
+    if (transStage) transStage.hidden = true;
     document.body.classList.add('entered');
-    window.dispatchEvent(new Event('laoliu-enter'));
-    setTimeout(function(){ gate.hidden = true; }, reduceMotion ? 80 : 720);
+    gate.classList.add('leaving');
+    if (!enterDispatched){
+      enterDispatched = true;
+      window.dispatchEvent(new Event('laoliu-enter'));
+    }
+    setTimeout(function(){ gate.hidden = true; }, 720);
   }
-  gateBtn.addEventListener('click', enter);
+  function finishEnter(){ // skip: jump straight to the end state
+    if (entered) return;
+    clearTimers();
+    document.body.classList.add('card-in');
+    completeReveal();
+  }
+
+  function enter(){
+    if (entered || transitioning) return;
+    if (hintTimer) clearInterval(hintTimer);
+    if (reduceMotion || !transStage || !slogan || !titleWrap){
+      // reduced motion: quick fades only, sounds unchanged
+      document.body.classList.add('card-in');
+      completeReveal();
+      return;
+    }
+    transitioning = true;
+    transStart = Date.now();
+    gate.classList.add('entering');
+    scatterRing();
+    transStage.hidden = false;
+
+    // slogan assembles word by word; the selection frame hops to each
+    // word as it lands and a soft tick marks the landing
+    var wordAt = [300, 720, 1140, 1560];
+    for (var w = 0; w < words.length; w++){
+      (function(word, at, withGhost){
+        later(function(){
+          word.classList.add('in');
+          followSel(word, 460);
+          later(function(){ if (window.pawTick) window.pawTick(); }, 150);
+          if (withGhost) later(function(){ spawnGhost(word); }, 90);
+        }, at);
+      })(words[w], wordAt[w] || (300 + w * 420), w === 1);
+    }
+    // sentence complete: the frame takes the whole line and flashes once
+    later(function(){
+      followSel(slogan, 80);
+      later(function(){
+        placeSel(slogan);
+        if (selBox) selBox.classList.add('flash');
+        if (window.pawLock) window.pawLock();
+      }, 100);
+    }, 2080);
+    // morph: slogan shrinks away, the big title takes its place
+    later(function(){
+      slogan.classList.add('out');
+      hideSel();
+    }, 2280);
+    later(function(){ titleWrap.classList.add('in'); }, 2380);
+    // a lime «Mèu~» bubble pops at the title's corner, then goes
+    later(function(){ if (meuBubble) meuBubble.classList.add('pop'); }, 3080);
+    later(function(){ if (meuBubble) meuBubble.classList.add('out'); }, 3720);
+    // title settles away; the gate's black lifts and the paw flies home
+    later(function(){
+      titleWrap.classList.add('out');
+      gate.classList.add('clear');
+      startFlight();
+    }, 3980);
+    // the intro card forms as the paw arrives
+    later(function(){ document.body.classList.add('card-in'); }, 4700);
+    // background, menu row and player fade in last
+    later(completeReveal, 5050);
+  }
+
+  // The pop must start inside the pointer gesture itself: create/resume
+  // the AudioContext and play synchronously on pointerdown. A keyboard
+  // click has no pointerdown, so the click handler plays it instead.
+  var lastPopAt = 0;
+  gateBtn.addEventListener('pointerdown', function(){
+    lastPopAt = Date.now();
+    if (window.pawPop) window.pawPop(0.3);
+  });
+  gateBtn.addEventListener('click', function(){
+    if (Date.now() - lastPopAt > 600 && window.pawPop) window.pawPop(0.3);
+    enter();
+  });
+  // pressing again during the choreography skips straight to the site
+  gate.addEventListener('pointerdown', function(){
+    if (transitioning && Date.now() - transStart > 250) finishEnter();
+  });
+  gate.addEventListener('click', function(){
+    if (transitioning && Date.now() - transStart > 250) finishEnter();
+  });
   try { gateBtn.focus({ preventScroll:true }); } catch(e){ try { gateBtn.focus(); } catch(e2){} }
 })();
 </script>
