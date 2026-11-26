@@ -62,11 +62,15 @@ section{position:relative}
 .hero-pin{position:relative;height:100vh;height:100dvh;overflow:hidden}
 .scene{position:absolute;inset:0;will-change:filter}
 .layer{position:absolute;inset:0;pointer-events:none}
+.px-in{position:absolute;inset:-18px;pointer-events:none}
+.hero-photo-outer{position:absolute;inset:0;z-index:4;pointer-events:none}
 .l-glow{position:absolute;top:-12%;right:-6%;width:70vmin;height:70vmin}
 .l-ridge-far{position:absolute;left:0;right:0;bottom:16%;height:22%;opacity:.55}
-.l-dustband{position:absolute;left:-10%;right:-10%;top:52%;height:20%;background:linear-gradient(180deg,transparent,rgba(201,205,210,.13) 45%,rgba(201,205,210,.05) 70%,transparent);filter:blur(10px)}
-.l-plain{position:absolute;left:0;right:0;bottom:0;height:24%;background:linear-gradient(180deg,#3A4046 0%,#23282C 34%,#121518 68%,#0A0C0E 100%)}
-.l-plain::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 90% at 22% 30%,rgba(0,0,0,.35),transparent 60%),radial-gradient(ellipse 40% 70% at 74% 55%,rgba(0,0,0,.3),transparent 60%)}
+.l-dustband{position:absolute;left:-10%;right:-10%;top:52%;height:20%}
+.l-dustband-in{background:linear-gradient(180deg,transparent,rgba(201,205,210,.13) 45%,rgba(201,205,210,.05) 70%,transparent);filter:blur(10px)}
+.l-plain{position:absolute;left:0;right:0;bottom:0;height:24%}
+.l-plain-in{background:linear-gradient(180deg,#3A4046 0%,#23282C 34%,#121518 68%,#0A0C0E 100%)}
+.l-plain-in::before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse 60% 90% at 22% 30%,rgba(0,0,0,.35),transparent 60%),radial-gradient(ellipse 40% 70% at 74% 55%,rgba(0,0,0,.3),transparent 60%)}
 .l-rocks{position:absolute;left:0;right:0;bottom:0;height:17%}
 .hero-photo-wrap{position:absolute;top:50%;right:5.5vw;transform:translateY(-50%);z-index:4}
 .hero-photo{position:relative;width:min(56vh,432px);aspect-ratio:1376/1824;border-radius:999px 999px 20px 20px;overflow:hidden;border:1px solid rgba(236,238,240,.3);box-shadow:0 40px 90px rgba(0,0,0,.65)}
@@ -293,17 +297,19 @@ section{position:relative}
 <section class="hero" id="hero">
  <div class="hero-pin">
   <div class="scene" id="heroScene">
-   <div class="nebula l-glow layer" data-depth="0.15"></div>
-   <div class="layer l-ridge-far" data-depth="0.3"><svg class="ridge" viewBox="0 0 1440 220" preserveAspectRatio="none" aria-hidden="true"><path d="M0 150 L140 96 L300 138 L470 78 L650 128 L830 88 L1010 132 L1190 84 L1330 122 L1440 100 L1440 220 L0 220 Z" fill="#454C52"/></svg></div>
-   <div class="layer l-plain" data-depth="0.75"></div>
-   <div class="layer l-dustband" data-depth="0.6"></div>
+   <div class="layer l-glow" data-depth="0.15"><div class="px-in nebula" data-px></div></div>
+   <div class="layer l-ridge-far" data-depth="0.3"><div class="px-in" data-px><svg class="ridge" viewBox="0 0 1440 220" preserveAspectRatio="none" aria-hidden="true"><path d="M0 150 L140 96 L300 138 L470 78 L650 128 L830 88 L1010 132 L1190 84 L1330 122 L1440 100 L1440 220 L0 220 Z" fill="#454C52"/></svg></div></div>
+   <div class="layer l-plain" data-depth="0.75"><div class="px-in l-plain-in" data-px></div></div>
+   <div class="layer l-dustband" data-depth="0.6"><div class="px-in l-dustband-in" data-px></div></div>
+   <div class="hero-photo-outer" data-depth="0.5">
    <div class="hero-photo-wrap">
-     <figure class="hero-photo" id="heroPhoto" data-depth="0.5">
+     <figure class="hero-photo" id="heroPhoto" data-px>
        <img src="moon-hero.jpg" alt="老六坐在月球表面，抬头望着升起的地球（想象图）" />
        <figcaption>LA LLUNA · 月球 — VISUALITZACIÓ · 想象图</figcaption>
      </figure>
    </div>
-   <div class="layer l-rocks" data-depth="1"><svg class="ridge" viewBox="0 0 1440 160" preserveAspectRatio="none" aria-hidden="true"><path d="M0 160 L0 84 L120 108 L210 60 L330 104 L430 130 L1010 118 L1130 66 L1260 108 L1360 78 L1440 104 L1440 160 Z" fill="#050607"/></svg></div>
+   </div>
+   <div class="layer l-rocks" data-depth="1"><div class="px-in" data-px><svg class="ridge" viewBox="0 0 1440 160" preserveAspectRatio="none" aria-hidden="true"><path d="M0 160 L0 84 L120 108 L210 60 L330 104 L430 130 L1010 118 L1130 66 L1260 108 L1360 78 L1440 104 L1440 160 Z" fill="#050607"/></svg></div></div>
   </div>
   <div class="veil" id="veil"></div>
   <div class="hero-lockup" id="heroLockup">
@@ -593,7 +599,7 @@ var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 var saveData = !!(navigator.connection && navigator.connection.saveData);
 var moonVideo = $("#moonVideo");
 if(moonVideo && !reduced && !saveData && window.matchMedia("(min-width: 641px)").matches){
-  moonVideo.playbackRate = 1.25; /* source motion is very subtle (slow push-in + blink); a gentle rate-up makes the loop perceptible without altering the content */
+  moonVideo.playbackRate = 1.0; /* v2 source (fix pass 3): genuine push-in + drifting dust + blinks — play at natural rate */
   function moonEnsureSrc(){
     var s = $("source", moonVideo);
     if(s && !s.getAttribute("src")){ s.setAttribute("src", s.getAttribute("data-src")); moonVideo.load(); }
@@ -717,7 +723,7 @@ $$("#heroScene [data-depth]").forEach(function(el){
   var d = parseFloat(el.getAttribute("data-depth"));
   heroTl.to(el, { y: -d * 64, duration: 1, ease: "none" }, 0);
 });
-heroTl.fromTo("#heroPhoto", { scale: 1.07 }, { scale: 1, duration: 1, ease: "none" }, 0);
+heroTl.fromTo(".hero-photo-outer", { scale: 1.07, transformOrigin: "78% 50%" }, { scale: 1, duration: 1, ease: "none" }, 0); /* scroll owns the OUTER wrapper (y via the data-depth loop + this scale); the pointer handler owns the figure inside it */
 /* dust fallback: if the user never scrolls, gently fly the opening ourselves */
 var dustTimer = setTimeout(function(){
   if(window.scrollY < 8){
@@ -728,25 +734,32 @@ var dustTimer = setTimeout(function(){
 }, 3400);
 window.addEventListener("wheel", function(){ clearTimeout(dustTimer); }, { once: true, passive: true });
 window.addEventListener("touchstart", function(){ clearTimeout(dustTimer); }, { once: true, passive: true });
-/* pointer parallax (desktop, fine pointer, motion-ok): lerped quickTo setters on x AND y.
-   Deepest layer (data-depth=1) tops out at ~14px x / ~10px y, every other layer scales by its depth.
-   The old handler only tweened x via per-event gsap.to on .hero-pin, and most hero layers are
-   full-bleed gradients whose x-shift is invisible — movement was effectively zero to the eye. */
+/* pointer parallax (desktop, fine pointer, motion-ok) — wrapper-pair ownership (fix pass 3).
+   The scroll timeline writes transforms ONLY to the OUTER [data-depth] layers; this handler writes
+   transforms ONLY to the INNER [data-px] elements. The node sets are disjoint by construction:
+   no element carries both attributes, and every [data-px] is a descendant of a [data-depth] outer.
+   Why pass 2 failed in a real browser: GSAP keeps ONE transform state per element, and the pinned
+   scrub timeline held live tweens on the SAME nodes the quickTos wrote to (y on every layer, scale
+   on #heroPhoto). Every ScrollTrigger render (scrub ticks, Lenis-driven updates, refresh) re-imposed
+   the timeline's transform and stomped the pointer offsets back — zero visible movement, while jsdom
+   (no rendering) passed. Deepest layer (data-depth=1) tops out at ~14px x / ~10px y, scaled by depth;
+   offsets ease back to rest on mouseleave. */
 if(finePointer && !window.matchMedia("(prefers-reduced-motion: reduce)").matches){
   var pLayers = [];
-  $$("#heroScene [data-depth]").forEach(function(el){
-    var d = parseFloat(el.getAttribute("data-depth")) || 0;
-    pLayers.push({
-      d: d,
-      x: gsap.quickTo(el, "x", { duration: 0.9, ease: "power3.out" }),
-      y: gsap.quickTo(el, "y", { duration: 0.9, ease: "power3.out" })
-    });
+  $$("#heroScene [data-depth]").forEach(function(outer){
+    var inner = outer.querySelector("[data-px]");
+    if(!inner) return;
+    var entry = {
+      d: parseFloat(outer.getAttribute("data-depth")) || 0,
+      x: gsap.quickTo(inner, "x", { duration: 0.9, ease: "power3.out" }),
+      y: gsap.quickTo(inner, "y", { duration: 0.9, ease: "power3.out" })
+    };
+    if(inner.id === "heroPhoto") entry.rot = gsap.quickTo(inner, "rotation", { duration: 1.1, ease: "power3.out" });
+    pLayers.push(entry);
   });
-  var pPhotoRot = gsap.quickTo("#heroPhoto", "rotation", { duration: 1.1, ease: "power3.out" });
   var heroSec = $("#hero");
   function pApply(nx, ny){
-    pLayers.forEach(function(L){ L.x(nx * L.d * 14); L.y(ny * L.d * 10); });
-    pPhotoRot(nx * 1.4);
+    pLayers.forEach(function(L){ L.x(nx * L.d * 14); L.y(ny * L.d * 10); if(L.rot) L.rot(nx * 1.4); });
   }
   window.addEventListener("mousemove", function(e){
     var r = heroSec.getBoundingClientRect();
