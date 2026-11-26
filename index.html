@@ -139,9 +139,9 @@ section{position:relative}
 .ai-note{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;color:var(--dust)}
 .moon-panel .ai-note{position:absolute;top:12px;right:12px;z-index:2;background:rgba(6,8,9,.6);border:1px solid rgba(236,238,240,.22);padding:4px 9px;border-radius:999px;color:var(--silver)}
 .moon-play{margin:7vh auto 0;text-align:center;padding:0 20px}
-.moon-cat-btn{position:relative;width:172px;height:172px;border-radius:50%;padding:0;border:1px solid rgba(236,238,240,.35);overflow:visible;background:none}
-.moon-cat-btn .face{width:100%;height:100%;border-radius:50%;overflow:hidden;box-shadow:0 24px 50px rgba(0,0,0,.55)}
-.moon-cat-btn .face img{width:100%;height:100%;object-fit:cover;object-position:50% 30%}
+.moon-cat-btn{position:relative;width:172px;height:172px;aspect-ratio:1/1;border-radius:50%;padding:0;border:1px solid rgba(236,238,240,.35);overflow:visible;background:none}
+.moon-cat-btn .face{display:block;width:100%;height:100%;aspect-ratio:1/1;border-radius:50%;overflow:hidden;box-shadow:0 24px 50px rgba(0,0,0,.55)}
+.moon-cat-btn .face img{display:block;width:100%;height:100%;object-fit:cover;object-position:50% 30%}
 .moon-cat-btn .shadow{position:absolute;left:50%;bottom:-20px;transform:translateX(-50%);width:120px;height:20px;border-radius:50%;background:radial-gradient(closest-side,rgba(0,0,0,.65),transparent);z-index:-1}
 .moon-play .hint{margin-top:30px;font-family:var(--mono);font-size:10.5px;letter-spacing:.24em;color:var(--dust)}
 .moon-play .hint b{color:var(--amber);font-weight:400}
@@ -185,7 +185,8 @@ section{position:relative}
 .fin-cat{position:absolute;z-index:5;right:9vw;bottom:6.5%;width:min(30vh,215px);aspect-ratio:3/4;border-radius:999px 999px 16px 16px;overflow:hidden;border:1px solid rgba(236,238,240,.3);box-shadow:0 30px 60px rgba(0,0,0,.6)}
 .fin-cat img{width:100%;height:100%;object-fit:cover;object-position:50% 30%}
 .fin-cat figcaption{position:absolute;left:0;right:0;bottom:0;padding:26px 12px 9px;background:linear-gradient(180deg,transparent,rgba(4,6,7,.85));font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--silver);text-align:center}
-.finale-copy{position:absolute;z-index:6;left:7vw;bottom:12%;max-width:520px}
+.finale-copy{position:absolute;z-index:6;left:7vw;bottom:13.5%;max-width:520px;isolation:isolate;text-shadow:0 1px 14px rgba(6,8,9,.85),0 0 3px rgba(6,8,9,.9)}
+.finale-copy::before{content:"";position:absolute;inset:-30px -42px;z-index:-1;background:radial-gradient(ellipse at 32% 62%,rgba(6,8,9,.66),rgba(6,8,9,.32) 55%,transparent 78%);pointer-events:none}
 .finale-copy h2{font-family:var(--disp);font-weight:800;font-size:clamp(28px,4vw,50px);line-height:1.3;letter-spacing:.08em}
 .finale-copy h2 .cn{display:block;font-size:.55em;color:var(--silver);letter-spacing:.26em;margin-top:10px;font-weight:700}
 .finale-copy .thanks{margin-top:16px;font-size:16px;line-height:1.7;color:var(--silver)}
@@ -422,7 +423,7 @@ section{position:relative}
  <div class="moon-stage">
    <figure class="moon-panel" id="moonPanel">
      <img src="moon-hero.jpg" alt="老六坐在月球表面，抬头望着升起的地球（想象图）" loading="lazy" />
-     <video id="moonVideo" muted loop playsinline preload="none" poster="moon-hero.jpg" aria-label="老六在月球上望着地球升起的动态画面（想象图）"><source data-src="moon-ambient.mp4" type="video/mp4" /></video>
+     <video id="moonVideo" muted loop playsinline autoplay preload="auto" poster="moon-hero.jpg" aria-label="老六在月球上望着地球升起的动态画面（想象图）"><source data-src="moon-ambient.mp4" type="video/mp4" /></video>
      <span class="ai-note">VISUALITZACIÓ · 想象图</span>
      <figcaption>
        <div class="t">Assegut a la Lluna <span class="cn">坐在月亮上</span></div>
@@ -592,13 +593,22 @@ var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 var saveData = !!(navigator.connection && navigator.connection.saveData);
 var moonVideo = $("#moonVideo");
 if(moonVideo && !reduced && !saveData && window.matchMedia("(min-width: 641px)").matches){
+  moonVideo.playbackRate = 1.25; /* source motion is very subtle (slow push-in + blink); a gentle rate-up makes the loop perceptible without altering the content */
+  function moonEnsureSrc(){
+    var s = $("source", moonVideo);
+    if(s && !s.getAttribute("src")){ s.setAttribute("src", s.getAttribute("data-src")); moonVideo.load(); }
+  }
+  function moonTryPlay(){
+    moonEnsureSrc();
+    var p = moonVideo.play();
+    if(p && p.catch) p.catch(function(){});
+  }
+  moonVideo.addEventListener("canplay", function(){ moonTryPlay(); });
+  moonVideo.addEventListener("playing", function(){ moonVideo.classList.add("on"); });
   var vio = new IntersectionObserver(function(es){
     es.forEach(function(en){
-      if(en.isIntersecting){
-        var s = $("source", moonVideo);
-        if(s && !s.getAttribute("src")){ s.setAttribute("src", s.getAttribute("data-src")); moonVideo.load(); }
-        moonVideo.play().then(function(){ moonVideo.classList.add("on"); }).catch(function(){});
-      } else { moonVideo.pause(); }
+      if(en.isIntersecting){ moonTryPlay(); }
+      else { moonVideo.pause(); moonVideo.classList.remove("on"); }
     });
   }, { threshold: 0.25 });
   vio.observe($("#moonPanel"));
@@ -718,17 +728,32 @@ var dustTimer = setTimeout(function(){
 }, 3400);
 window.addEventListener("wheel", function(){ clearTimeout(dustTimer); }, { once: true, passive: true });
 window.addEventListener("touchstart", function(){ clearTimeout(dustTimer); }, { once: true, passive: true });
-/* pointer parallax (desktop) */
-if(finePointer){
-  var heroPin = $(".hero-pin");
-  heroPin.addEventListener("mousemove", function(e){
-    var nx = (e.clientX / window.innerWidth - 0.5) * 2, ny = (e.clientY / window.innerHeight - 0.5) * 2;
-    $$("#heroScene [data-depth]").forEach(function(el){
-      var d = parseFloat(el.getAttribute("data-depth"));
-      gsap.to(el, { x: nx * d * 26, duration: 0.9, ease: "power3.out", overwrite: "auto" });
+/* pointer parallax (desktop, fine pointer, motion-ok): lerped quickTo setters on x AND y.
+   Deepest layer (data-depth=1) tops out at ~14px x / ~10px y, every other layer scales by its depth.
+   The old handler only tweened x via per-event gsap.to on .hero-pin, and most hero layers are
+   full-bleed gradients whose x-shift is invisible — movement was effectively zero to the eye. */
+if(finePointer && !window.matchMedia("(prefers-reduced-motion: reduce)").matches){
+  var pLayers = [];
+  $$("#heroScene [data-depth]").forEach(function(el){
+    var d = parseFloat(el.getAttribute("data-depth")) || 0;
+    pLayers.push({
+      d: d,
+      x: gsap.quickTo(el, "x", { duration: 0.9, ease: "power3.out" }),
+      y: gsap.quickTo(el, "y", { duration: 0.9, ease: "power3.out" })
     });
-    gsap.to("#heroPhoto", { rotation: nx * 1.2, duration: 1, ease: "power3.out", overwrite: "auto" });
   });
+  var pPhotoRot = gsap.quickTo("#heroPhoto", "rotation", { duration: 1.1, ease: "power3.out" });
+  var heroSec = $("#hero");
+  function pApply(nx, ny){
+    pLayers.forEach(function(L){ L.x(nx * L.d * 14); L.y(ny * L.d * 10); });
+    pPhotoRot(nx * 1.4);
+  }
+  window.addEventListener("mousemove", function(e){
+    var r = heroSec.getBoundingClientRect();
+    if(r.bottom < 0 || r.top > window.innerHeight) return; /* hero off-screen: stay put */
+    pApply((e.clientX / window.innerWidth - 0.5) * 2, (e.clientY / window.innerHeight - 0.5) * 2);
+  }, { passive: true });
+  document.addEventListener("mouseleave", function(){ pApply(0, 0); });
 }
 
 /* ---------- TRAJECTORY ---------- */
