@@ -1327,6 +1327,179 @@
     .mp-play{transition:none}
   }
 </style>
+<style id="hybrid-css">
+/* ===== redecorate-hybrid: additive sections (hero / journey / page gallery / finale) =====
+   Tokens: repo DESIGN.md. Existing styles untouched; everything below is new or,
+   for the scroll-unlock rules, an override that only activates with html.scroll-on. */
+
+/* --- scroll unlock: page stays locked (original behaviour) until entry completes --- */
+html.scroll-on{overflow-y:auto !important;overflow-x:hidden !important}
+html.scroll-on body{height:auto !important;overflow-y:visible !important;overflow-x:hidden !important}
+
+/* --- scroll cue on the hub --- */
+.scroll-cue{
+  position:absolute;left:50%;bottom:104px;transform:translateX(-50%);z-index:5;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  background:none;border:0;cursor:pointer;color:var(--ink-soft);
+  font-family:"Nunito","PingFang SC","Microsoft YaHei",sans-serif;font-size:.82rem;font-weight:700;
+  padding:8px 14px;opacity:0;pointer-events:none;transition:opacity .6s ease .2s;
+}
+html.scroll-on .scroll-cue{opacity:.92;pointer-events:auto}
+.scroll-cue svg{width:20px;height:20px;fill:var(--accent);animation:cueBob 2.2s ease-in-out infinite}
+@keyframes cueBob{0%,100%{transform:translateY(0)}50%{transform:translateY(5px)}}
+
+/* --- shared bits for new sections --- */
+.hx-sec{position:relative;background:#000;color:var(--ink)}
+.hx-sec :focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:6px}
+.hx-title{
+  font-family:"Baloo 2","PingFang SC","Microsoft YaHei",sans-serif;font-weight:800;
+  font-size:clamp(1.9rem,6vw,3.1rem);line-height:1.15;margin:0;color:var(--ink);
+}
+.hx-title .cn{color:var(--accent-strong);font-size:.52em;font-weight:700;margin-left:.35em}
+
+/* ============ HERO (Frostpaw layers + Otis touch) ============ */
+.hero{
+  min-height:100dvh;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  padding:6dvh 4vw 9dvh;
+}
+.hero-bgimg{
+  position:absolute;inset:-6%;z-index:0;pointer-events:none;
+  background-size:cover;background-position:center;
+  filter:blur(34px) brightness(.42) saturate(1.05);transform:scale(1.15);
+}
+.hero-word{
+  position:absolute;z-index:1;left:0;right:0;top:9%;
+  text-align:center;pointer-events:none;user-select:none;
+  font-family:"Baloo 2","PingFang SC","Microsoft YaHei",sans-serif;font-weight:800;
+  font-size:clamp(3.6rem,15.5vw,11rem);line-height:.95;letter-spacing:.01em;white-space:nowrap;
+}
+.hero-word .w{position:absolute;left:0;right:0;top:0;transition:opacity .28s ease,transform .28s ease}
+.hero-word .w small{display:block;font-size:.16em;font-weight:700;letter-spacing:.42em;margin-top:.6em}
+.hero-word .w-a{color:var(--ink);position:relative}
+.hero-word .w-a small{color:var(--ink-soft)}
+.hero-word .w-b{color:var(--rose);opacity:0;transform:translateY(14px)}
+.hero-word .w-b small{color:var(--rose)}
+.hero.revealing .hero-word .w-a{opacity:0;transform:translateY(-14px)}
+.hero.revealing .hero-word .w-b{opacity:1;transform:translateY(0)}
+.hero-catwrap{
+  position:relative;z-index:2;margin-top:16dvh;
+  width:min(58vw,430px);touch-action:none;cursor:grab;
+}
+.hero-catwrap:active{cursor:grabbing}
+.hero-cat{
+  position:relative;border-radius:46% 46% 22px 22px / 34% 34% 22px 22px;overflow:hidden;
+  aspect-ratio:4/4.7;background:var(--card);
+  box-shadow:0 30px 70px rgba(0,0,0,.65);
+  will-change:transform;
+}
+.hero-cat img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+.hero-cat .cat-reveal{
+  position:absolute;inset:0;
+  -webkit-mask-image:radial-gradient(circle 150px at var(--mx,50%) var(--my,50%),#000 52%,transparent 74%);
+  mask-image:radial-gradient(circle 150px at var(--mx,50%) var(--my,50%),#000 52%,transparent 74%);
+  opacity:0;transition:opacity .25s ease;
+}
+.hero.revealing .hero-cat .cat-reveal{opacity:1}
+.hero-hint{
+  position:absolute;z-index:3;left:50%;bottom:-52px;transform:translateX(-50%);
+  background:var(--card);border:1.5px solid var(--line);color:var(--ink);
+  border-radius:999px;padding:7px 16px;font-size:.85rem;font-weight:700;white-space:nowrap;
+  box-shadow:var(--shadow-sm);
+}
+.hero-hint .alt{display:none;color:var(--rose)}
+.hero.revealing .hero-hint .base{display:none}
+.hero.revealing .hero-hint .alt{display:inline}
+.hero-chip{
+  position:absolute;z-index:3;background:var(--card);border:1.5px solid var(--line);
+  border-radius:14px;padding:8px 13px;box-shadow:var(--shadow-sm);pointer-events:none;
+  font-size:.86rem;line-height:1.35;max-width:210px;
+}
+.hero-chip b{display:block;font-family:"Baloo 2",sans-serif;color:var(--accent-strong);font-size:.78rem;letter-spacing:.04em}
+.hero-chip.chip-eyes{left:6%;top:34%}
+.hero-chip.chip-paws{right:6%;bottom:20%}
+@media (max-width:640px){
+  .hero-chip{display:none}
+  .hero-catwrap{width:min(74vw,340px);margin-top:20dvh}
+  .hero-word{font-size:clamp(3rem,17vw,5rem);top:7%}
+}
+
+/* ============ JOURNEY (NAÏADE one-take) ============ */
+.journey{background:#000}
+.journey-head{padding:9dvh 5vw 4dvh;max-width:1200px;margin:0 auto}
+.journey-head p{color:var(--ink-soft);max-width:56ch;margin:.7em 0 0}
+.journey-pin{position:relative;height:100dvh;overflow:hidden}
+.j-slide{position:absolute;inset:0;visibility:hidden}
+.j-slide:first-child{visibility:visible}
+.j-slide .j-img{position:absolute;inset:0;overflow:hidden}
+.j-slide .j-img img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.15);will-change:transform}
+.j-slide::after{content:"";position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.55),transparent 42%)}
+.j-card{
+  position:absolute;z-index:4;left:5vw;bottom:7dvh;max-width:min(430px,86vw);
+  background:var(--card);border:1.5px solid var(--line);border-radius:16px;
+  padding:16px 18px 14px;box-shadow:var(--shadow);
+}
+.j-card .ca-cap{margin-bottom:4px}
+.j-card p{margin:0;font-size:.95rem}
+.j-card .j-pos{
+  display:block;margin-top:9px;color:var(--gold);font-weight:800;font-size:.8rem;letter-spacing:.14em;
+  font-family:"Baloo 2",sans-serif;
+}
+.j-rail{
+  position:absolute;z-index:5;right:26px;top:50%;transform:translateY(-50%);
+  display:flex;flex-direction:column;gap:20px;align-items:flex-end;
+}
+.j-rail .stop{
+  display:flex;align-items:center;gap:9px;color:var(--ink-soft);
+  font-family:"Baloo 2",sans-serif;font-weight:700;font-size:.82rem;background:none;border:0;cursor:pointer;padding:2px 0;
+}
+.j-rail .stop .nm{opacity:0;transform:translateX(6px);transition:opacity .3s,transform .3s}
+.j-rail .stop .tick{display:block;width:22px;height:2px;background:var(--line);transition:background .3s,width .3s}
+.j-rail .stop.on{color:var(--gold)}
+.j-rail .stop.on .nm{opacity:1;transform:none}
+.j-rail .stop.on .tick{background:var(--gold);width:38px}
+@media (max-width:640px){.j-rail{right:12px}.j-rail .stop .nm{display:none}}
+/* static fallback (reduced motion / no GSAP): stacked stills, everything readable */
+.journey.static .journey-pin{height:auto;overflow:visible}
+.journey.static .j-slide{position:relative;visibility:visible;height:82dvh;margin-bottom:10px}
+.journey.static .j-card{opacity:1 !important;transform:none !important}
+.journey.static .j-rail{display:none}
+
+/* ============ PAGE GALLERY (full grid, cloned from the panel) ============ */
+.page-gallery{padding:9dvh 5vw 6dvh;max-width:1240px;margin:0 auto}
+.page-gallery .gallery-page{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:18px;margin-top:4.5dvh;
+}
+.page-gallery .sec-note{color:var(--ink-soft);margin-top:.7em;max-width:60ch}
+
+/* ============ FINALE / REWIND ============ */
+.finale{padding:10dvh 5vw 14dvh;text-align:center}
+.finale .thanks{
+  font-family:"Baloo 2","PingFang SC",sans-serif;font-weight:800;
+  font-size:clamp(1.7rem,5.4vw,2.7rem);margin:0 0 .4em;
+}
+.finale .thanks .cn{color:var(--accent-strong)}
+.finale p{color:var(--ink-soft);margin:.3em 0}
+.finale a{color:var(--accent-strong)}
+.rewind-btn{
+  margin-top:4.5dvh;display:inline-flex;align-items:center;gap:11px;cursor:pointer;
+  background:var(--card);border:1.5px solid var(--gold);color:var(--ink);
+  border-radius:999px;padding:14px 28px;
+  font-family:"Baloo 2","PingFang SC",sans-serif;font-weight:800;font-size:1.05rem;
+  box-shadow:var(--shadow-sm);transition:transform .18s ease,border-color .18s ease;
+}
+.rewind-btn:hover{transform:translateY(-2px);border-color:var(--accent-strong)}
+.rewind-btn svg{width:21px;height:21px;fill:var(--gold)}
+html.rewinding .stage,html.rewinding .hero,html.rewinding .journey,
+html.rewinding .page-gallery,html.rewinding .finale{
+  filter:blur(5px) saturate(1.25);transition:filter .16s ease;
+}
+
+@media (prefers-reduced-motion: reduce){
+  .scroll-cue svg{animation:none}
+  .hero-word .w,.hero-cat .cat-reveal,.rewind-btn{transition:none}
+}
+
+</style>
 </head>
 <body>
 
@@ -1482,8 +1655,115 @@
     </nav>
   </main>
 
-  <p class="foot"><span class="domain">vov.cat</span> · Gràcies per la visita!</p>
+  <button class="scroll-cue" id="scrollCue" type="button" aria-label="Baixa a veure més · 往下看看">
+      <span>Baixa · 往下看看</span>
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 18.5 3.8 10.3l1.8-1.8L12 14.9l6.4-6.4 1.8 1.8L12 18.5z"/></svg>
+    </button>
+    <p class="foot"><span class="domain">vov.cat</span> · Gràcies per la visita!</p>
 </div>
+
+<!-- ================= HERO · Frostpaw layers + Otis touch ================= -->
+<section class="hero hx-sec" id="hero" aria-label="Lao Liu en gran · 老六大特写">
+  <div class="hero-bgimg" data-depth="0.15" aria-hidden="true"></div>
+  <h2 class="hero-word" data-depth="0.3" aria-hidden="true">
+    <span class="w w-a">DESPERT<small>醒 着</small></span>
+    <span class="w w-b">DORMINT<small>睡 着 了</small></span>
+  </h2>
+  <div class="hero-chip chip-eyes" data-depth="0.8" aria-hidden="true">
+    <b>ULLS · 眼睛</b>Blau grisós, grans i rodons<br />蓝灰色，又大又圆
+  </div>
+  <div class="hero-chip chip-paws" data-depth="0.65" aria-hidden="true">
+    <b>COIXINETS · 肉垫</b>De color rosa<br />粉色的鼻子，粉色的肉垫
+  </div>
+  <div class="hero-catwrap" data-depth="0.45">
+    <div class="hero-cat" id="heroCat" role="button" tabindex="0"
+         aria-label="Lao Liu — arrossega'l i farà un mèu · 拖一拖老六，它会喵一声">
+      <img class="cat-base" alt="老六睁着大大的蓝灰色眼睛，无辜地望着镜头" draggable="false" />
+      <div class="cat-reveal" aria-hidden="true">
+        <img alt="" draggable="false" />
+      </div>
+    </div>
+    <p class="hero-hint" aria-hidden="true">
+      <span class="base">Passa-hi per sobre · 从它身上划过</span>
+      <span class="alt">Estic dormint… · 我睡着啦…</span>
+    </p>
+  </div>
+</section>
+
+<!-- ================= JOURNEY · NAÏADE one-take ================= -->
+<section class="journey hx-sec" id="journey" aria-label="Un viatge per les fotos · 一段照片之旅">
+  <div class="journey-head">
+    <h2 class="hx-title">El viatge<span class="cn">一段旅程</span></h2>
+    <p>Fes scroll i la càmera s'acosta sola: cinc fotos, una darrere l'altra, sense talls. · 往下滚，镜头会自己推近：五张照片，一镜到底。</p>
+  </div>
+  <div class="journey-pin" id="journeyPin">
+    <article class="j-slide" data-gref="3">
+      <div class="j-img"><img alt="老六用两只前爪扶着奶瓶，认真地喝奶" loading="lazy" /></div>
+      <div class="j-card">
+        <span class="ca-cap">L'hora de la llet <span class="cn">喝奶时间</span></span>
+        <p>Agafant el biberó amb les dues potetes: això és una feina molt seriosa. · 两只小爪子一起扶着奶瓶：喝奶可是件正经事。</p>
+        <span class="j-pos">01 / 05</span>
+      </div>
+    </article>
+    <article class="j-slide" data-gref="10">
+      <div class="j-img"><img alt="老六的侧脸特写，粉鼻子、竖耳朵" loading="lazy" /></div>
+      <div class="j-card">
+        <span class="ca-cap">El perfil <span class="cn">侧颜杀</span></span>
+        <p>El nas rosa i les orelles ben amunt: el meu millor perfil. · 粉鼻子、竖耳朵：这是我最好看的侧脸。</p>
+        <span class="j-pos">02 / 05</span>
+      </div>
+    </article>
+    <article class="j-slide" data-gref="5">
+      <div class="j-img"><img alt="老六肚皮朝上举起小爪子求抱抱" loading="lazy" /></div>
+      <div class="j-card">
+        <span class="ca-cap">Vull abraçades <span class="cn">求抱抱</span></span>
+        <p>Amb les potetes enlaire i la panxa a punt: vinga, abraça'm. · 举起小爪子、亮出肚皮：快来抱抱我。</p>
+        <span class="j-pos">03 / 05</span>
+      </div>
+    </article>
+    <article class="j-slide" data-gref="16">
+      <div class="j-img"><img alt="车里一束光打在老六身上，它是车里最小的乘客" loading="lazy" /></div>
+      <div class="j-card">
+        <span class="ca-cap">Passatger petit <span class="cn">车里的小乘客</span></span>
+        <p>Un raig de llum només per a mi: el passatger més petit del cotxe. · 一束光只打在我身上：车里最小的乘客。</p>
+        <span class="j-pos">04 / 05</span>
+      </div>
+    </article>
+    <article class="j-slide" data-gref="18">
+      <div class="j-img"><img alt="老六蜷成一团，睡在一个写着 love 的爱心旁边" loading="lazy" /></div>
+      <div class="j-card">
+        <span class="ca-cap">Dormint amb amor <span class="cn">枕着爱心睡</span></span>
+        <p>Dormo fet una bola al costat d'un cor que diu «love». · 我蜷成一团，睡在一个写着 love 的爱心旁边。</p>
+        <span class="j-pos">05 / 05</span>
+      </div>
+    </article>
+    <nav class="j-rail" id="jRail" aria-label="Parades del viatge · 旅程站点">
+      <button type="button" class="stop on"><span class="nm">La llet · 奶</span><span class="tick"></span>01</button>
+      <button type="button" class="stop"><span class="nm">El perfil · 侧颜</span><span class="tick"></span>02</button>
+      <button type="button" class="stop"><span class="nm">Abraçades · 抱抱</span><span class="tick"></span>03</button>
+      <button type="button" class="stop"><span class="nm">El viatge · 出行</span><span class="tick"></span>04</button>
+      <button type="button" class="stop"><span class="nm">L'amor · 爱心</span><span class="tick"></span>05</button>
+    </nav>
+  </div>
+</section>
+
+<!-- ================= PAGE GALLERY · the complete grid ================= -->
+<section class="page-gallery hx-sec" id="galeria-page" aria-label="Galeria completa · 完整照片墙">
+  <h2 class="hx-title">Galeria de fotos<span class="cn">照片墙</span></h2>
+  <p class="sec-note">Totes les fotos, sense haver d'obrir cap panell. Toca'n una per veure-la en gran. · 全部照片都在这里，不用打开面板也能看。点一张就能放大。</p>
+  <div class="gallery gallery-page" id="gGridPage"></div>
+</section>
+
+<!-- ================= FINALE · rewind ================= -->
+<section class="finale hx-sec" id="finale">
+  <h2 class="thanks">Gràcies per la visita! <span class="cn">谢谢你的到访！</span></h2>
+  <p><span class="c-label">Contacte · 联系</span> <a href="mailto:rbiovv@gmail.com">rbiovv@gmail.com</a></p>
+  <p>© vov.cat · Fet amb amor · No està en venda</p>
+  <button class="rewind-btn" id="rewindBtn" type="button">
+    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 13.2c2.9 0 5.6 2.3 5.6 4.6 0 1.5-1.1 2.4-2.7 2.4-1 0-1.8-.4-2.9-.4s-1.9.4-2.9.4c-1.6 0-2.7-.9-2.7-2.4 0-2.3 2.7-4.6 5.6-4.6Z"/><ellipse cx="5.4" cy="10.4" rx="1.9" ry="2.4" transform="rotate(-18 5.4 10.4)"/><ellipse cx="9.2" cy="7.4" rx="2" ry="2.6" transform="rotate(-6 9.2 7.4)"/><ellipse cx="14.8" cy="7.4" rx="2" ry="2.6" transform="rotate(6 14.8 7.4)"/><ellipse cx="18.6" cy="10.4" rx="1.9" ry="2.4" transform="rotate(18 18.6 10.4)"/></svg>
+    Rebobina · 回到顶部
+  </button>
+</section>
 
 <!-- floating music player -->
 <div class="music-player" id="musicPlayer">
@@ -5829,6 +6109,290 @@
   setTimeout(function(){ if (video.readyState < 2) drawStatic(); }, 4000);
   requestAnimationFrame(loop);
 })();
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://unpkg.com/lenis@1.1.14/dist/lenis.min.js"></script>
+<script id="hybrid-js">
+/* ===== redecorate-hybrid behaviour =====
+   Additive only: wires the new hero / journey / page gallery / rewind.
+   Uses the site's existing assets and sounds (window.pawRealMeow) and the
+   existing #lightbox. Degrades to static stacked sections without GSAP. */
+(function(){
+  'use strict';
+  function mq(q){ try { return window.matchMedia(q).matches; } catch(e){ return false; } }
+  var reduced = mq('(prefers-reduced-motion: reduce)');
+  var finePointer = mq('(hover: hover) and (pointer: fine)');
+  var hasGsap = typeof window.gsap !== 'undefined';
+  if (hasGsap && window.ScrollTrigger) gsap.registerPlugin(ScrollTrigger);
+
+  /* ---------- source photos: borrow the gallery's own images (no duplication) ---------- */
+  var figs = Array.prototype.slice.call(document.querySelectorAll('#panel-galeria .gallery .g-card'));
+  function figImg(i){ var f = figs[i]; if (!f) return null; return f.querySelector('img'); }
+  function figSrc(i){ var im = figImg(i); return im ? im.getAttribute('src') : null; }
+
+  var hero = document.getElementById('hero');
+  var catBase = hero.querySelector('.cat-base');
+  var catRevealImg = hero.querySelector('.cat-reveal img');
+  var heroBg = hero.querySelector('.hero-bgimg');
+  var AWAKE = 8, ASLEEP = 0; // gallery #9 "Quina mirada" / #1 "La migdiada"
+  if (figSrc(AWAKE)){
+    catBase.src = figSrc(AWAKE);
+    heroBg.style.backgroundImage = 'url(' + figSrc(AWAKE) + ')';
+  }
+  if (figSrc(ASLEEP)) catRevealImg.src = figSrc(ASLEEP);
+
+  var slides = Array.prototype.slice.call(document.querySelectorAll('.j-slide'));
+  slides.forEach(function(s){
+    var i = parseInt(s.getAttribute('data-gref'), 10);
+    var im = s.querySelector('.j-img img');
+    if (im && figSrc(i)) im.src = figSrc(i);
+  });
+
+  /* ---------- page gallery: clone the panel grid, wire the same lightbox ---------- */
+  var grid = document.getElementById('gGridPage');
+  var lb = document.getElementById('lightbox');
+  var lbImg = document.getElementById('lbImg');
+  var lbVideo = document.getElementById('lbVideo');
+  var lbCa = document.getElementById('lbCa');
+  var lbCn = document.getElementById('lbCn');
+  var lastFocus = null;
+  function openLbClone(media, ca, cn){
+    lastFocus = document.activeElement;
+    if (media && media.tagName === 'VIDEO'){
+      lbImg.removeAttribute('src'); lbImg.hidden = true;
+      lbVideo.hidden = false;
+      try { lbVideo.currentTime = 0; } catch(e){}
+      var pr = lbVideo.play(); if (pr && pr.catch) pr.catch(function(){});
+    } else if (media){
+      if (lbVideo){ lbVideo.pause(); lbVideo.hidden = true; }
+      lbImg.src = media.src; lbImg.alt = media.alt || '';
+      lbImg.hidden = false;
+    }
+    lbCa.textContent = ca || ''; lbCn.textContent = cn || '';
+    lb.classList.add('open');
+    var c = document.getElementById('lbClose'); if (c) c.focus();
+  }
+  if (grid){
+    figs.forEach(function(f){
+      var clone = f.cloneNode(true);
+      clone.removeAttribute('id');
+      var btn = clone.querySelector('.zoom');
+      if (btn){
+        btn.addEventListener('click', function(){
+          openLbClone(btn.querySelector('img') || btn.querySelector('video'),
+                      btn.getAttribute('data-ca'), btn.getAttribute('data-cn'));
+        });
+      }
+      grid.appendChild(clone);
+    });
+  }
+
+  /* ---------- scroll unlock: original page is scroll-locked until the entry ends ---------- */
+  var gate = document.getElementById('gate');
+  var trans = document.getElementById('transStage');
+  function gone(el){
+    if (!el) return true;
+    if (!document.body.contains(el)) return true;
+    if (el.hidden) return true;
+    var cs = window.getComputedStyle(el);
+    return cs.display === 'none' || cs.visibility === 'hidden';
+  }
+  var unlocked = false, lenis = null;
+  function unlock(){
+    if (unlocked) return;
+    unlocked = true;
+    document.documentElement.classList.add('scroll-on');
+    initScroll();
+  }
+  var poll = window.setInterval(function(){
+    if (gone(gate) && gone(trans)) { window.clearInterval(poll); unlock(); }
+  }, 400);
+  window.setTimeout(function(){ window.clearInterval(poll); unlock(); }, 45000); // safety
+
+  function scrollToTarget(target, dur){
+    if (lenis){ lenis.scrollTo(target, { duration: dur || 1.1 }); return; }
+    var el = typeof target === 'string' ? document.querySelector(target) : target;
+    var y = target === 0 ? 0 : (el ? el.getBoundingClientRect().top + window.scrollY : 0);
+    if (reduced){ window.scrollTo(0, y); return; }
+    var start = window.scrollY, t0 = null, D = (dur || 1.1) * 1000;
+    function step(ts){
+      if (!t0) t0 = ts;
+      var p = Math.min(1, (ts - t0) / D);
+      var e = p < .5 ? 8 * p * p * p * p : 1 - Math.pow(-2 * p + 2, 4) / 2; // easeInOutQuart
+      window.scrollTo(0, start + (y - start) * e);
+      if (p < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  /* ---------- cue + rewind ---------- */
+  var cue = document.getElementById('scrollCue');
+  if (cue) cue.addEventListener('click', function(){ scrollToTarget('#hero', 1.2); });
+  var rw = document.getElementById('rewindBtn');
+  if (rw) rw.addEventListener('click', function(){
+    document.documentElement.classList.add('rewinding');
+    scrollToTarget(0, 1.15);
+    window.setTimeout(function(){ document.documentElement.classList.remove('rewinding'); }, 1250);
+  });
+
+  /* ---------- hero: parallax + reveal + squash (init immediately, harmless pre-entry) ---------- */
+  initHero();
+
+  function initHero(){
+    var wrap = hero.querySelector('.hero-catwrap');
+    var cat = document.getElementById('heroCat');
+    var reveal = hero.querySelector('.cat-reveal');
+    /* pointer parallax with lerp (desktop, fine pointer only) */
+    if (finePointer && !reduced && hasGsap){
+      var layers = Array.prototype.slice.call(hero.querySelectorAll('[data-depth]'));
+      var setters = layers.map(function(el){
+        return {
+          d: parseFloat(el.getAttribute('data-depth')),
+          x: gsap.quickTo(el, 'x', { duration: .9, ease: 'power3.out' }),
+          y: gsap.quickTo(el, 'y', { duration: .9, ease: 'power3.out' })
+        };
+      });
+      hero.addEventListener('pointermove', function(e){
+        var r = hero.getBoundingClientRect();
+        var nx = (e.clientX - r.left) / r.width - .5;
+        var ny = (e.clientY - r.top) / r.height - .5;
+        setters.forEach(function(s){ s.x(nx * 92 * s.d); s.y(ny * 62 * s.d); });
+      });
+      hero.addEventListener('pointerleave', function(){
+        setters.forEach(function(s){ s.x(0); s.y(0); });
+      });
+    }
+    /* feathered-circle reveal follows the pointer over the cat */
+    var mx = .5, my = .5, tx = .5, ty = .5, rafId = null;
+    function loop(){
+      mx += (tx - mx) * .18; my += (ty - my) * .18;
+      reveal.style.setProperty('--mx', (mx * 100) + '%');
+      reveal.style.setProperty('--my', (my * 100) + '%');
+      if (Math.abs(tx - mx) > .001 || Math.abs(ty - my) > .001) rafId = requestAnimationFrame(loop);
+      else rafId = null;
+    }
+    function kick(){ if (!rafId) rafId = requestAnimationFrame(loop); }
+    if (finePointer && !reduced){
+      wrap.addEventListener('pointermove', function(e){
+        var r = cat.getBoundingClientRect();
+        tx = Math.min(1, Math.max(0, (e.clientX - r.left) / r.width));
+        ty = Math.min(1, Math.max(0, (e.clientY - r.top) / r.height));
+        hero.classList.add('revealing');
+        kick();
+      });
+      wrap.addEventListener('pointerleave', function(){ hero.classList.remove('revealing'); });
+    }
+    /* Otis-lite: drag to squash & stretch, release springs back with a real meow */
+    var drag = null;
+    function meow(){
+      if (window.pawRealMeow) window.pawRealMeow(Math.floor(Math.random() * 5));
+    }
+    function bounce(){
+      if (hasGsap && !reduced){
+        gsap.fromTo(cat, { scaleX: .86, scaleY: 1.12 },
+          { scaleX: 1, scaleY: 1, duration: .9, ease: 'elastic.out(1, 0.35)' });
+      }
+      meow();
+    }
+    wrap.addEventListener('pointerdown', function(e){
+      drag = { x: e.clientX, y: e.clientY };
+      wrap.setPointerCapture(e.pointerId);
+      if (hasGsap) gsap.killTweensOf(cat);
+    });
+    wrap.addEventListener('pointermove', function(e){
+      if (!drag) return;
+      var dx = Math.max(-70, Math.min(70, e.clientX - drag.x));
+      var dy = Math.max(-70, Math.min(70, e.clientY - drag.y));
+      var sx = Math.max(.82, Math.min(1.2, 1 + dx / 450));
+      var sy = Math.max(.82, Math.min(1.18, 1 - dx / 820 + dy / 1500));
+      cat.style.transform = 'scale(' + sx + ',' + sy + ') rotate(' + (dx / 22) + 'deg)';
+    });
+    function endDrag(){
+      if (!drag) return;
+      drag = null;
+      if (hasGsap && !reduced){
+        gsap.to(cat, { scaleX: 1, scaleY: 1, rotation: 0, duration: .95, ease: 'elastic.out(1, 0.35)',
+                       onComplete: function(){ cat.style.transform = ''; } });
+      } else { cat.style.transform = ''; }
+      meow();
+    }
+    wrap.addEventListener('pointerup', endDrag);
+    wrap.addEventListener('pointercancel', endDrag);
+    cat.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); bounce(); }
+    });
+    /* touch devices: gentle scroll-driven parallax instead of pointer parallax */
+    if (!finePointer && hasGsap && window.ScrollTrigger && !reduced){
+      gsap.to(wrap, { yPercent: -7, ease: 'none',
+        scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
+      gsap.to(hero.querySelector('.hero-word'), { yPercent: 16, ease: 'none',
+        scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
+    }
+  }
+
+  /* ---------- scroll features (after entry) ---------- */
+  function initScroll(){
+    if (!reduced && typeof window.Lenis !== 'undefined'){
+      lenis = new Lenis({ duration: 1.15, smoothWheel: true });
+      if (hasGsap && window.ScrollTrigger){
+        lenis.on('scroll', ScrollTrigger.update);
+        gsap.ticker.add(function(t){ lenis.raf(t * 1000); });
+        gsap.ticker.lagSmoothing(0);
+      } else {
+        (function raf(t){ lenis.raf(t); requestAnimationFrame(raf); })(performance.now());
+      }
+    }
+    initJourney();
+  }
+
+  function initJourney(){
+    var journey = document.getElementById('journey');
+    var pin = document.getElementById('journeyPin');
+    var stops = Array.prototype.slice.call(document.querySelectorAll('#jRail .stop'));
+    function setRail(idx){
+      stops.forEach(function(s, i){ s.classList.toggle('on', i === idx); });
+    }
+    if (reduced || !hasGsap || !window.ScrollTrigger){
+      journey.classList.add('static');
+      slides.forEach(function(s){
+        var im = s.querySelector('.j-img img'); if (im) im.style.transform = 'none';
+      });
+      return;
+    }
+    var tl = gsap.timeline({
+      defaults: { ease: 'none' },
+      scrollTrigger: {
+        trigger: pin, start: 'top top', end: '+=500%', scrub: .6, pin: true,
+        anticipatePin: 1,
+        onUpdate: function(self){ setRail(Math.min(slides.length - 1, Math.round(self.progress * (slides.length - 1)))); }
+      }
+    });
+    slides.forEach(function(s, i){
+      var img = s.querySelector('.j-img img');
+      var card = s.querySelector('.j-card');
+      if (i === 0){
+        tl.fromTo(img, { scale: 1.16 }, { scale: 1, duration: 1 }, 0);
+        tl.fromTo(card, { y: 26, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .3 }, .62);
+      } else {
+        var at = i;
+        tl.fromTo(s, { autoAlpha: 0 }, { autoAlpha: 1, duration: .32 }, at);
+        tl.fromTo(img, { scale: 1.2 }, { scale: 1, duration: 1 }, at);
+        tl.fromTo(card, { y: 26, autoAlpha: 0 }, { y: 0, autoAlpha: 1, duration: .3 }, at + .62);
+        tl.to(slides[i - 1].querySelector('.j-card'), { autoAlpha: 0, y: -14, duration: .25 }, at);
+      }
+    });
+    tl.to({}, { duration: .35 }); // landing hold on the last photo
+    var st = tl.scrollTrigger;
+    stops.forEach(function(btn, i){
+      btn.addEventListener('click', function(){
+        var y = st.start + (st.end - st.start) * ((i + .55) / slides.length);
+        if (lenis) lenis.scrollTo(y, { duration: 1 }); else window.scrollTo({ top: y, behavior: 'smooth' });
+      });
+    });
+  }
+})();
+
 </script>
 </body>
 </html>
