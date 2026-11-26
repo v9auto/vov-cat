@@ -62,7 +62,7 @@ section{position:relative}
 .hero-pin{position:relative;height:100vh;height:100dvh;overflow:hidden}
 .scene{position:absolute;inset:0;will-change:filter}
 .layer{position:absolute;inset:0;pointer-events:none}
-.px-in{position:absolute;inset:-18px;pointer-events:none}
+.px-in{position:absolute;inset:-34px;pointer-events:none}
 .hero-photo-outer{position:absolute;inset:0;z-index:4;pointer-events:none}
 .l-glow{position:absolute;top:-12%;right:-6%;width:70vmin;height:70vmin}
 .l-ridge-far{position:absolute;left:0;right:0;bottom:16%;height:22%;opacity:.55}
@@ -734,39 +734,55 @@ var dustTimer = setTimeout(function(){
 }, 3400);
 window.addEventListener("wheel", function(){ clearTimeout(dustTimer); }, { once: true, passive: true });
 window.addEventListener("touchstart", function(){ clearTimeout(dustTimer); }, { once: true, passive: true });
-/* pointer parallax (desktop, fine pointer, motion-ok) — wrapper-pair ownership (fix pass 3).
+/* pointer parallax (desktop, fine pointer, motion-ok) — wrapper-pair ownership + own rAF loop (fix pass 4).
    The scroll timeline writes transforms ONLY to the OUTER [data-depth] layers; this handler writes
    transforms ONLY to the INNER [data-px] elements. The node sets are disjoint by construction:
    no element carries both attributes, and every [data-px] is a descendant of a [data-depth] outer.
-   Why pass 2 failed in a real browser: GSAP keeps ONE transform state per element, and the pinned
-   scrub timeline held live tweens on the SAME nodes the quickTos wrote to (y on every layer, scale
-   on #heroPhoto). Every ScrollTrigger render (scrub ticks, Lenis-driven updates, refresh) re-imposed
-   the timeline's transform and stomped the pointer offsets back — zero visible movement, while jsdom
-   (no rendering) passed. Deepest layer (data-depth=1) tops out at ~14px x / ~10px y, scaled by depth;
-   offsets ease back to rest on mouseleave. */
+   History, briefly: passes 2–3 drove the inners through GSAP per-property tween setters, which share
+   GSAP's single per-element transform state with the pinned scrub timeline — in a real browser the
+   offsets measured 0px no matter how sound the code looked (jsdom, having no renderer, always passed).
+   Pass 4 removes GSAP from the pointer path entirely: a self-contained requestAnimationFrame loop
+   lerps each inner toward its target and writes style.transform directly, so nothing else in the
+   page can overwrite, re-interpret or cache away the value. Amplitudes: deepest layer (depth 1)
+   tops out at 30px x / 18px y, scaled by depth (photo at 0.5 → 15px / 9px, plus up to 2deg tilt);
+   offsets ease back to rest on mouseleave, and the loop sleeps once every layer has settled. */
 if(finePointer && !window.matchMedia("(prefers-reduced-motion: reduce)").matches){
   var pLayers = [];
   $$("#heroScene [data-depth]").forEach(function(outer){
     var inner = outer.querySelector("[data-px]");
     if(!inner) return;
-    var entry = {
-      d: parseFloat(outer.getAttribute("data-depth")) || 0,
-      x: gsap.quickTo(inner, "x", { duration: 0.9, ease: "power3.out" }),
-      y: gsap.quickTo(inner, "y", { duration: 0.9, ease: "power3.out" })
-    };
-    if(inner.id === "heroPhoto") entry.rot = gsap.quickTo(inner, "rotation", { duration: 1.1, ease: "power3.out" });
-    pLayers.push(entry);
+    pLayers.push({ el: inner, d: parseFloat(outer.getAttribute("data-depth")) || 0,
+                   photo: inner.id === "heroPhoto", cx: 0, cy: 0, cr: 0 });
   });
   var heroSec = $("#hero");
-  function pApply(nx, ny){
-    pLayers.forEach(function(L){ L.x(nx * L.d * 14); L.y(ny * L.d * 10); if(L.rot) L.rot(nx * 1.4); });
-  }
-  window.addEventListener("mousemove", function(e){
+  var pTX = 0, pTY = 0, pRaf = 0; /* normalized pointer target, in [-1, 1] */
+  function pHeroVisible(){
     var r = heroSec.getBoundingClientRect();
-    if(r.bottom < 0 || r.top > window.innerHeight) return; /* hero off-screen: stay put */
-    pApply((e.clientX / window.innerWidth - 0.5) * 2, (e.clientY / window.innerHeight - 0.5) * 2);
+    return r.bottom >= 0 && r.top <= window.innerHeight;
+  }
+  function pFrame(){
+    pRaf = 0;
+    if(!pHeroVisible()) return; /* hero off-screen: pause; next on-screen mousemove restarts */
+    var settled = true;
+    pLayers.forEach(function(L){
+      var tx = pTX * L.d * 30, ty = pTY * L.d * 18, tr = L.photo ? pTX * L.d * 4 : 0;
+      L.cx += (tx - L.cx) * 0.06;
+      L.cy += (ty - L.cy) * 0.06;
+      L.cr += (tr - L.cr) * 0.06;
+      if(Math.abs(tx - L.cx) > 0.05 || Math.abs(ty - L.cy) > 0.05 || Math.abs(tr - L.cr) > 0.05) settled = false;
+      else { L.cx = tx; L.cy = ty; L.cr = tr; }
+      L.el.style.transform = "translate3d(" + L.cx.toFixed(2) + "px," + L.cy.toFixed(2) + "px,0)" + (L.photo ? " rotate(" + L.cr.toFixed(3) + "deg)" : "");
+    });
+    if(!settled) pRaf = requestAnimationFrame(pFrame);
+  }
+  function pKick(){ if(!pRaf) pRaf = requestAnimationFrame(pFrame); }
+  window.addEventListener("mousemove", function(e){
+    if(!pHeroVisible()) return; /* hero off-screen: stay put */
+    pTX = (e.clientX / window.innerWidth - 0.5) * 2;
+    pTY = (e.clientY / window.innerHeight - 0.5) * 2;
+    pKick();
   }, { passive: true });
-  document.addEventListener("mouseleave", function(){ pApply(0, 0); });
+  document.addEventListener("mouseleave", function(){ pTX = 0; pTY = 0; pKick(); });
 }
 
 /* ---------- TRAJECTORY ---------- */
