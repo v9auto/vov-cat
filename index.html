@@ -1340,9 +1340,11 @@ html.scroll-on body{height:auto !important;overflow-y:visible !important;overflo
 .scroll-cue{
   position:absolute;left:50%;bottom:104px;transform:translateX(-50%);z-index:5;
   display:flex;flex-direction:column;align-items:center;gap:2px;
-  background:none;border:0;cursor:pointer;color:var(--ink-soft);
+  background:rgba(8,10,2,.78);border:1.5px solid rgba(206,255,28,.35);border-radius:999px;
+  -webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+  cursor:pointer;color:var(--ink);
   font-family:"Nunito","PingFang SC","Microsoft YaHei",sans-serif;font-size:.82rem;font-weight:700;
-  padding:8px 14px;opacity:0;pointer-events:none;transition:opacity .6s ease .2s;
+  padding:9px 18px;opacity:0;pointer-events:none;transition:opacity .6s ease .2s;
 }
 html.scroll-on .scroll-cue{opacity:.92;pointer-events:auto}
 .scroll-cue svg{width:20px;height:20px;fill:var(--accent);animation:cueBob 2.2s ease-in-out infinite}
@@ -1359,7 +1361,7 @@ html.scroll-on .scroll-cue{opacity:.92;pointer-events:auto}
 
 /* ============ HERO (Frostpaw layers + Otis touch) ============ */
 .hero{
-  min-height:100dvh;overflow:hidden;display:flex;align-items:center;justify-content:center;
+  min-height:100dvh;overflow:hidden;display:flex;flex-direction:column;align-items:center;justify-content:center;
   padding:6dvh 4vw 9dvh;
 }
 .hero-bgimg{
@@ -1368,7 +1370,9 @@ html.scroll-on .scroll-cue{opacity:.92;pointer-events:auto}
   filter:blur(34px) brightness(.42) saturate(1.05);transform:scale(1.15);
 }
 .hero-word{
-  position:absolute;z-index:1;left:0;right:0;top:9%;
+  /* in flow, stacked above the cat (z 4 > catwrap 2): the Chinese subtitle
+     under the headline can never slide under the arch photo again */
+  position:relative;z-index:4;width:100%;flex:none;
   text-align:center;pointer-events:none;user-select:none;
   font-family:"Baloo 2","PingFang SC","Microsoft YaHei",sans-serif;font-weight:800;
   font-size:clamp(3.6rem,15.5vw,11rem);line-height:.95;letter-spacing:.01em;white-space:nowrap;
@@ -1382,7 +1386,7 @@ html.scroll-on .scroll-cue{opacity:.92;pointer-events:auto}
 .hero.revealing .hero-word .w-a{opacity:0;transform:translateY(-14px)}
 .hero.revealing .hero-word .w-b{opacity:1;transform:translateY(0)}
 .hero-catwrap{
-  position:relative;z-index:2;margin-top:16dvh;
+  position:relative;z-index:2;margin-top:4.5dvh;
   width:min(58vw,430px);touch-action:none;cursor:grab;
 }
 .hero-catwrap:active{cursor:grabbing}
@@ -1411,16 +1415,21 @@ html.scroll-on .scroll-cue{opacity:.92;pointer-events:auto}
 .hero.revealing .hero-hint .alt{display:inline}
 .hero-chip{
   position:absolute;z-index:3;background:var(--card);border:1.5px solid var(--line);
-  border-radius:14px;padding:8px 13px;box-shadow:var(--shadow-sm);pointer-events:none;
-  font-size:.86rem;line-height:1.35;max-width:210px;
+  border-radius:14px;padding:8px 15px;box-shadow:var(--shadow-sm);pointer-events:none;
+  font-size:.86rem;line-height:1.35;max-width:248px;
 }
 .hero-chip b{display:block;font-family:"Baloo 2",sans-serif;color:var(--accent-strong);font-size:.78rem;letter-spacing:.04em}
 .hero-chip.chip-eyes{left:6%;top:34%}
 .hero-chip.chip-paws{right:6%;bottom:20%}
 @media (max-width:640px){
   .hero-chip{display:none}
-  .hero-catwrap{width:min(74vw,340px);margin-top:20dvh}
-  .hero-word{font-size:clamp(3rem,17vw,5rem);top:7%}
+  .hero-catwrap{width:min(74vw,340px);margin-top:4dvh}
+  .hero-word{font-size:clamp(3rem,17vw,5rem)}
+}
+/* short viewports: shrink headline + cat so the column always fits the screen */
+@media (max-height:840px) and (min-width:641px){
+  .hero-word{font-size:clamp(3.2rem,12.5vw,8.2rem)}
+  .hero-catwrap{width:min(52vh,430px)}
 }
 
 /* ============ JOURNEY (NAÏADE one-take) ============ */
@@ -1465,14 +1474,17 @@ html.scroll-on .scroll-cue{opacity:.92;pointer-events:auto}
 .journey.static .j-rail{display:none}
 
 /* ============ PAGE GALLERY (full grid, cloned from the panel) ============ */
-.page-gallery{padding:9dvh 5vw 6dvh;max-width:1240px;margin:0 auto}
+/* bottom reserve on gallery + finale: the fixed music player (~83px incl. its
+   bottom offset) must never cover content at rest - same idea as the stage's
+   own 104px reserve, with air on top */
+.page-gallery{padding:9dvh 5vw calc(6dvh + 110px);max-width:1240px;margin:0 auto}
 .page-gallery .gallery-page{
   display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:18px;margin-top:4.5dvh;
 }
 .page-gallery .sec-note{color:var(--ink-soft);margin-top:.7em;max-width:60ch}
 
 /* ============ FINALE / REWIND ============ */
-.finale{padding:10dvh 5vw 14dvh;text-align:center}
+.finale{padding:10dvh 5vw calc(14dvh + 110px);text-align:center}
 .finale .thanks{
   font-family:"Baloo 2","PingFang SC",sans-serif;font-weight:800;
   font-size:clamp(1.7rem,5.4vw,2.7rem);margin:0 0 .4em;
@@ -1673,7 +1685,7 @@ html.rewinding .page-gallery,html.rewinding .finale{
     <b>ULLS · 眼睛</b>Blau grisós, grans i rodons<br />蓝灰色，又大又圆
   </div>
   <div class="hero-chip chip-paws" data-depth="0.65" aria-hidden="true">
-    <b>COIXINETS · 肉垫</b>De color rosa<br />粉色的鼻子，粉色的肉垫
+    <b>COIXINETS · 肉垫</b>De color rosa<br />粉色的鼻子，<br />粉色的肉垫
   </div>
   <div class="hero-catwrap" data-depth="0.45">
     <div class="hero-cat" id="heroCat" role="button" tabindex="0"
